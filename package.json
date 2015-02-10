@@ -1,0 +1,11 @@
+{
+  "name": "carto-test-service",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "body-parser": "^1.11.0",
+    "carto": "^0.14.1",
+    "express": "^4.11.2",
+    "mapnik": "^3.1.4"
+  }
+}

@@ -1,47 +1,41 @@
 #!/usr/bin/env node
+"use strict";
 
-var express = require('express'),
-    bodyParser = require('body-parser'),
-    carto = require('carto');
+var PORT = 4096;
 
-(function () {
-    "use strict";
+var express = require("express"),
+    bodyParser = require("body-parser"),
+    Vector = require("tilelive-vector"),
+    CartoMML = require("./carto_mml");
 
-    var app = express();
-    app.use(bodyParser.text());
+/*eslint-disable no-unused-vars */
+var errorHandler = function (err, req, res, next) {
+    res.status(500);
+    res.render("error", { error: err });
+};
+/*eslint-enable */
 
-    var CartoLayer = function (name, geometry) {
-        this.name = name;
-        this.id = name;
-        this.geometry = geometry || "point";
+var app = express();
+app.use(bodyParser.text());
+app.use(errorHandler);
 
-        this['srs-name'] = "900913";
-        this.advanced = {};
-        this.class = '';
-    };
+app.post("/style", function (req, res) {
+    res.status(200);
+    res.send(new CartoMML(req.body).xml);
+});
 
-    var CartoStyle = function (data) {
-        // this.id = ...
-        this.data = data;
-    };
+app.post("/render", function (req, res) {
+    res.status(200);
 
-    var CartoMML = function (styleData) {
-        this.Layer = [ new CartoLayer('main') ];
-        this.Stylesheet = [ new CartoStyle(styleData) ];
-    };
+    var xml = new CartoMML(req.body).xml;
+    var vector = new Vector({xml: xml});
+    console.log(vector.getInfo(function (info) {
+        console.log(info);
+    }));
 
-    var renderer = new carto.Renderer();
+    res.send(xml);
+});
 
-    var toMapnikXML = function (styleData) {
-        return renderer.render(new CartoMML(styleData)).toString();
-    };
-    
-    app.post("/style", function (req, res) {
-        res.writeHead(200, {"Content-Type": "text/plain"});
-        res.end(toMapnikXML(req.body));
-    });
+app.listen(PORT);
 
-    app.listen(4096);
-
-    console.log("Server running on localhost:4096!");
-})();
+console.log("Server running on localhost: " + PORT);

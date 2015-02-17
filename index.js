@@ -2,6 +2,7 @@
 "use strict";
 
 var PORT = 4096;
+var BASE_ZOOM = 29
 
 var express = require("express"),
     bodyParser = require("body-parser"),
@@ -17,12 +18,14 @@ var errorHandler = function(err, req, res, next) {
 /*eslint-enable no-unused-vars */
 
 var app = express();
-app.use(bodyParser.text());
+app.use(bodyParser.json());
 app.use(errorHandler);
 
 app.post("/style", function(req, res) {
+    var xml = new CartoMML(req.body.style).xml;
     res.status(200);
-    res.send(new CartoMML(req.body).xml);
+    res.type("application/xml");
+    res.send(xml);
 });
 
 function Point(x, y, properties) {
@@ -32,16 +35,16 @@ function Point(x, y, properties) {
 }
 
 app.post("/render", function(req, res) {
-    var xml = new CartoMML(req.body).xml;
+    var xml = new CartoMML(req.body.style).xml;
 
-    var feat00 = new Point(0, 0),
-        feat22 = new Point(20, 20),
-        feat44 = new Point(40, 40);
+    var feat00 = new Point(3, 3),
+        feat11 = new Point(100, 100, { count: 4 }),
+        feat22 = new Point(200, 200);
 
     var ds = new mapnik.MemoryDatasource({"extent": "0,0,255,255"});
     ds.add(feat00);
+    ds.add(feat11);
     ds.add(feat22);
-    ds.add(feat44);
 
     var map = new mapnik.Map(256, 256);
     map.fromStringSync(xml);
@@ -53,10 +56,11 @@ app.post("/render", function(req, res) {
     map.add_layer(layer);
 
     map.zoomToBox([0, 0, 255, 255]);
-    // map.zoomAll();
 
     res.type("png");
-    res.send(map.renderSync("png"));
+    res.status(200);
+    var zoom = 1 << (BASE_ZOOM - parseInt(req.body.zoom, 10));
+    res.send(map.renderSync("png", { "scale_denominator": zoom }));
 });
 
 app.listen(PORT);

@@ -27,8 +27,6 @@ function CartoMML(styleData) {
     xml = xml.replace(/^\s*[\r\n]/gm, "");
 
     this.xml = xml;
-
-    console.log(this.xml);
 }
 
 module.exports = CartoMML;

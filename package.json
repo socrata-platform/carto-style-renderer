@@ -6,6 +6,7 @@
     "body-parser": "^1.11.0",
     "carto": "^0.14.1",
     "express": "^4.11.2",
-    "tilelive-vector": "^3.2.2"
+    "mapnik": "^3.1.4",
+    "request": "^2.53.0"
   }
 }

@@ -1,11 +1,11 @@
 "use strict";
 
-var carto = require('carto');
+var carto = require("carto");
 
-var CartoMML = function (styleData) {
+function CartoMML(styleData) {
     var renderer = new carto.Renderer();
 
-    var CartoLayer = function (name, geometry) {
+    function CartoLayer(name, geometry) {
         this.name = name;
         this.id = name;
         this.geometry = geometry || "point";
@@ -13,16 +13,22 @@ var CartoMML = function (styleData) {
         this["srs-name"] = "900913";
         this.advanced = {};
         this.class = "";
-    };
+    }
 
-    var CartoStyle = function (data) {
-        // this.id = <id> // we probably don't need this.
+    function CartoStyle(data) {
         this.data = data;
-    };
+    }
 
     this.Layer = [ new CartoLayer("main") ];
     this.Stylesheet = [ new CartoStyle(styleData) ];
-    this.xml = renderer.render(this).toString();
-};
+
+    var xml = renderer.render(this).toString();
+    xml = xml.replace(/<Layer[\s\S]*>[\s\S]*<\/Layer>/, "");
+    xml = xml.replace(/^\s*[\r\n]/gm, "");
+
+    this.xml = xml;
+
+    console.log(this.xml);
+}
 
 module.exports = CartoMML;

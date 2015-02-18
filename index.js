@@ -4,9 +4,14 @@
 var PORT = 4096;
 var BASE_ZOOM = 29
 
+// Geometry types.
+var POINT = 1;
+
 var express = require("express"),
     bodyParser = require("body-parser"),
-    mapnik = require("mapnik");
+    mapnik = require("mapnik"),
+    VectorTile = require("vector-tile").VectorTile,
+    Pbf = require("pbf");
 
 var CartoMML = require("./carto_mml");
 
@@ -28,23 +33,46 @@ app.post("/style", function(req, res) {
     res.send(xml);
 });
 
-function Point(x, y, properties) {
-    this.x = x;
-    this.y = y;
-    this.properties = properties || { count: 1 };
+function Point(feature) {
+    var loc = feature.loadGeometry()[0][0];
+    this.x = loc.x / 16;
+    this.y = loc.y / 16;
+    var count = feature.properties.count;
+    this.properties = JSON.parse(feature.properties.properties);
+    this.properties.count = parseInt(count || this.properties.count, 10);
 }
+
+var extractFeatures = function(layer) {
+    var ret = [];
+
+    for (var i = 0; i < layer.length; i++) {
+        ret.push(layer.feature(i));
+    }
+
+    return ret;
+};
+
+var makeFeature = function(raw) {
+    if (raw.type === POINT) {
+        return new Point(raw);
+    } else {
+        throw new Error("Unsupported geometry type: " + raw.type);
+    }
+};
 
 app.post("/render", function(req, res) {
     var xml = new CartoMML(req.body.style).xml;
 
-    var feat00 = new Point(3, 3),
-        feat11 = new Point(100, 100, { count: 4 }),
-        feat22 = new Point(200, 200);
+    var tileBytes = new Buffer(req.body.bpbf, "base64");
+    var tile = new VectorTile(new Pbf(tileBytes));
+    var main = tile.layers.main;
+
+    var features = extractFeatures(main).map(makeFeature);
 
     var ds = new mapnik.MemoryDatasource({"extent": "0,0,255,255"});
-    ds.add(feat00);
-    ds.add(feat11);
-    ds.add(feat22);
+    features.forEach(function(ft) {
+        ds.add(ft);
+    });
 
     var map = new mapnik.Map(256, 256);
     map.fromStringSync(xml);

@@ -7,38 +7,29 @@ var BASE_ZOOM = 29
 // Geometry types.
 var POINT = 1;
 
-var express = require("express"),
-    bodyParser = require("body-parser"),
-    mapnik = require("mapnik"),
-    VectorTile = require("vector-tile").VectorTile,
-    Pbf = require("pbf");
-
+// Needed for "/style"
+var bodyParser = require("body-parser"),
+    express = require("express");
 var CartoMML = require("./carto_mml");
 
-/*eslint-disable no-unused-vars */
-var errorHandler = function(err, req, res, next) {
-    res.status(500);
-    res.render("error", { error: err });
-};
-/*eslint-enable no-unused-vars */
-
-var app = express();
-app.use(bodyParser.json());
-app.use(errorHandler);
-
-app.post("/style", function(req, res) {
-    var xml = new CartoMML(req.body.style).xml;
-    res.status(200);
-    res.type("application/xml");
-    res.send(xml);
-});
+// Needed for "/render"
+var Pbf = require("pbf"),
+    mapnik = require("mapnik"),
+    VectorTile = require("vector-tile").VectorTile;
 
 function Point(feature) {
     var loc = feature.loadGeometry()[0][0];
     this.x = loc.x / 16;
     this.y = loc.y / 16;
     var count = feature.properties.count;
-    this.properties = JSON.parse(feature.properties.properties);
+    var props = JSON.parse(feature.properties.properties);
+    this.properties = {};
+
+    for (var key in props) {
+        var float = parseFloat(props[key]);
+        this.properties[key] = isNaN(float) ? props[key] : float;
+    }
+
     this.properties.count = parseInt(count || this.properties.count, 10);
 }
 
@@ -59,6 +50,24 @@ var makeFeature = function(raw) {
         throw new Error("Unsupported geometry type: " + raw.type);
     }
 };
+
+/*eslint-disable no-unused-vars */
+var errorHandler = function(err, req, res, next) {
+    res.status(500);
+    res.render("error", { error: err });
+};
+/*eslint-enable no-unused-vars */
+
+var app = express();
+app.use(bodyParser.json());
+app.use(errorHandler);
+
+app.post("/style", function(req, res) {
+    var xml = new CartoMML(req.body.style).xml;
+    res.status(200);
+    res.type("application/xml");
+    res.send(xml);
+});
 
 app.post("/render", function(req, res) {
     var xml = new CartoMML(req.body.style).xml;

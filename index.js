@@ -2,7 +2,7 @@
 "use strict";
 
 var PORT = 4096;
-var BASE_ZOOM = 29
+var BASE_ZOOM = 29;
 
 // Geometry types.
 var POINT = 1;

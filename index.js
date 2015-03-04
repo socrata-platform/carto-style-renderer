@@ -10,7 +10,7 @@ var POINT = 1;
 // Needed for "/style"
 var bodyParser = require("body-parser"),
     express = require("express");
-var CartoMML = require("./carto_mml");
+var CartoMML = require("./lib/carto_mml");
 
 // Needed for "/render"
 var Pbf = require("pbf"),

@@ -1,26 +1,29 @@
 #!/usr/bin/env node
 "use strict";
 
-var PORT = 4096;
+var PORT = 2049;
+
+// Variables for Vector Tiles.
 var BASE_ZOOM = 29;
+var TILE_ZOOM_FACTOR = 16;
+var TILE_EXTENT = [0, 0, 255, 255];
 
 // Geometry types.
+// Currently we only support points.
 var POINT = 1;
 
-// Needed for "/style"
-var bodyParser = require("body-parser"),
-    express = require("express");
-var CartoMML = require("./lib/carto_mml");
+var CartoMML = require("./lib/carto_mml"),
+    Pbf = require("pbf"),
+    VectorTile = require("vector-tile").VectorTile,
+    bodyParser = require("body-parser"),
+    express = require("express"),
+    mapnik = require("mapnik");
 
-// Needed for "/render"
-var Pbf = require("pbf"),
-    mapnik = require("mapnik"),
-    VectorTile = require("vector-tile").VectorTile;
 
 function Point(feature) {
     var loc = feature.loadGeometry()[0][0];
-    this.x = loc.x / 16;
-    this.y = loc.y / 16;
+    this.x = loc.x / TILE_ZOOM_FACTOR;
+    this.y = loc.y / TILE_ZOOM_FACTOR;
     var count = feature.properties.count;
     var props = JSON.parse(feature.properties.properties);
     this.properties = {};
@@ -78,7 +81,7 @@ app.post("/render", function(req, res) {
 
     var features = extractFeatures(main).map(makeFeature);
 
-    var ds = new mapnik.MemoryDatasource({"extent": "0,0,255,255"});
+    var ds = new mapnik.MemoryDatasource({"extent": TILE_EXTENT.join()});
     features.forEach(function(ft) {
         ds.add(ft);
     });
@@ -92,7 +95,7 @@ app.post("/render", function(req, res) {
     layer.datasource = ds;
     map.add_layer(layer);
 
-    map.zoomToBox([0, 0, 255, 255]);
+    map.zoomToBox(TILE_EXTENT);
 
     res.type("png");
     res.status(200);

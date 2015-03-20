@@ -19,8 +19,12 @@ var CartoMML = require("./lib/carto_mml"),
     express = require("express"),
     mapnik = require("mapnik");
 
-
-function Point(feature) {
+/**
+ Create a well formed point object from a feature.
+ @param a deserialized feature.
+ @class
+ */
+var Point = function(feature) {
     var loc = feature.loadGeometry()[0][0];
     this.x = loc.x / TILE_ZOOM_FACTOR;
     this.y = loc.y / TILE_ZOOM_FACTOR;
@@ -29,12 +33,16 @@ function Point(feature) {
     this.properties = {};
 
     for (var key in props) {
-        var float = parseFloat(props[key]);
-        this.properties[key] = isNaN(float) ? props[key] : float;
+        var prop = props[key];
+        var num = Number(prop);
+        var float = parseFloat(prop);
+
+        this.properties[key] = (isNaN(num) || isNaN(float)) ? prop : num;
     }
 
-    this.properties.count = parseInt(count || this.properties.count, 10);
-}
+    var ct = (typeof count === "number") ? count : this.properties.count;
+    this.properties.count = parseInt(ct, 10);
+};
 
 var extractFeatures = function(layer) {
     var ret = [];
@@ -54,9 +62,26 @@ var makeFeature = function(raw) {
     }
 };
 
+var BadRequestError = function(message) {
+    this.name = "BadRequestError";
+    this.message = (message || "unknown error.");
+};
+
+BadRequestError.prototype = Object.create(Error.prototype);
+BadRequestError.prototype.constructor = BadRequestError;
+// TODO: Figure out how to properly construct a message?
+BadRequestError.prototype.toString = function () {
+    return this.name + ": " + this.message;
+};
+
 /*eslint-disable no-unused-vars */
 var errorHandler = function(err, req, res, next) {
-    res.status(500);
+    if (err instanceof BadRequestError) {
+        res.status(400);
+    } else {
+        res.status(500);
+    }
+
     res.render("error", { error: err });
 };
 /*eslint-enable no-unused-vars */
@@ -65,14 +90,19 @@ var app = express();
 app.use(bodyParser.json());
 app.use(errorHandler);
 
-app.post("/style", function(req, res) {
+var style = function(req, res) {
+    if (typeof req.body === typeof undefined) {
+        throw new BadRequestError("Could not parse request.");
+    }
     var xml = new CartoMML(req.body.style).xml;
     res.status(200);
     res.type("application/xml");
     res.send(xml);
-});
+};
 
-app.post("/render", function(req, res) {
+app.post("/style", style);
+
+var render = function(req, res) {
     var xml = new CartoMML(req.body.style).xml;
 
     var tileBytes = new Buffer(req.body.bpbf, "base64");
@@ -97,12 +127,21 @@ app.post("/render", function(req, res) {
 
     map.zoomToBox(TILE_EXTENT);
 
-    res.type("png");
+    res.type("image/png");
     res.status(200);
     var zoom = 1 << (BASE_ZOOM - parseInt(req.body.zoom, 10));
     res.send(map.renderSync("png", { "scale_denominator": zoom }));
-});
+};
 
-app.listen(PORT);
+app.post("/render", render);
 
-console.log("Server running on localhost: " + PORT);
+if (require.main === module) {
+    app.listen(PORT);
+
+    console.log("Server running on localhost: " + PORT);
+} else {
+    module.exports.TILE_ZOOM_FACTOR = TILE_ZOOM_FACTOR;
+    module.exports.Point = Point;
+    module.exports.style = style;
+    module.exports.render = render;
+}

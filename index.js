@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-var PORT = 2049;
+var PORT = 4096;
 
 // Variables for Vector Tiles.
 var BASE_ZOOM = 29;
@@ -130,7 +130,7 @@ var render = function(req, res) {
     res.type("image/png");
     res.status(200);
     var zoom = 1 << (BASE_ZOOM - parseInt(req.body.zoom, 10));
-    res.send(map.renderSync("png", { "scale_denominator": zoom }));
+    res.send(map.renderSync({format: "png"}, { "scale_denominator": zoom }));
 };
 
 app.post("/render", render);
@@ -138,7 +138,7 @@ app.post("/render", render);
 if (require.main === module) {
     app.listen(PORT);
 
-    console.log("Server running on localhost: " + PORT);
+    console.log("Server running on localhost:" + PORT);
 } else {
     module.exports.TILE_ZOOM_FACTOR = TILE_ZOOM_FACTOR;
     module.exports.Point = Point;

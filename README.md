@@ -2,8 +2,15 @@
 This is a service that's a proof of concept for getting a service that
 renders vector tiles into images using CartoCSS.
 
-You can exercise it with the following curl command.
+You can exercise it with the following curl commands.
+
+Transform CartoCSS to MapnikXML.
 ```
-curl -o test.png localhost:2049/render -H 'Content-type: application/json' -d @examples/main.json
+curl localhost:4096/style -H 'Content-type: application/json' -d @examples/main.json
 ```
-This will save an image to `test.png`.
+
+Render an image to `test.png`:
+```
+curl -o test.png localhost:4096/render -H 'Content-type: application/json' -d @examples/main.json
+```
+

@@ -103,13 +103,13 @@ var style = function(req, res) {
 app.post("/style", style);
 
 var render = function(req, res) {
-    var xml = new CartoMML(req.body.style).xml;
+    var xml = new CartoMML(req.body.style || "").xml;
 
-    var tileBytes = new Buffer(req.body.bpbf, "base64");
+    var tileBytes = new Buffer(req.body.bpbf || "", "base64");
     var tile = new VectorTile(new Pbf(tileBytes));
     var main = tile.layers.main;
 
-    var features = extractFeatures(main).map(makeFeature);
+    var features = (main) ? extractFeatures(main).map(makeFeature) : [];
 
     var ds = new mapnik.MemoryDatasource({"extent": TILE_EXTENT.join()});
     features.forEach(function(ft) {
@@ -129,7 +129,7 @@ var render = function(req, res) {
 
     res.type("image/png");
     res.status(200);
-    var zoom = 1 << (BASE_ZOOM - parseInt(req.body.zoom, 10));
+    var zoom = 1 << (BASE_ZOOM - parseInt(req.body.zoom || 1, 10));
     res.send(map.renderSync({format: "png"}, { "scale_denominator": zoom }));
 };
 

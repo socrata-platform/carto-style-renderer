@@ -1,1 +1,1 @@
-#main{marker-fill:#CCF;marker-width:5;marker-line-color:#009}
+#main{marker-line-color:#00C;marker-width:1}

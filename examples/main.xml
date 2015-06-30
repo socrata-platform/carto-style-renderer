@@ -1,0 +1,6 @@
+<Style name="style" filter-mode="first">
+  <Rule>
+    <MarkersSymbolizer fill="#000066" width="3" stroke="#000099" stroke-width="1" />
+    <PolygonSymbolizer fill="#009900" />
+  </Rule>
+</Style>

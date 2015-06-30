@@ -10,7 +10,9 @@ var TILE_EXTENT = [0, 0, 255, 255];
 
 // Geometry types.
 // Currently we only support points.
-var POINT = 1;
+var POINT = 1,
+    LINE_STRING = 2,
+    POLYGON = 3;
 
 var CartoMML = require("./lib/carto_mml"),
     Pbf = require("pbf"),
@@ -18,6 +20,24 @@ var CartoMML = require("./lib/carto_mml"),
     bodyParser = require("body-parser"),
     express = require("express"),
     mapnik = require("mapnik");
+
+var extractProperties = function(feature) {
+    var out = {};
+    var props = JSON.parse(feature.properties.properties);
+    var count = feature.properties.count;
+
+    for (var key in props) {
+        var prop = props[key];
+        var num = Number(prop);
+        var float = parseFloat(prop);
+
+        out[key] = (isNaN(num) || isNaN(float)) ? prop : num;
+    }
+
+    out.count = parseInt(count, 10);
+
+    return out;
+};
 
 /**
  Create a well formed point object from a feature.
@@ -28,20 +48,31 @@ var Point = function(feature) {
     var loc = feature.loadGeometry()[0][0];
     this.x = loc.x / TILE_ZOOM_FACTOR;
     this.y = loc.y / TILE_ZOOM_FACTOR;
-    var count = feature.properties.count;
-    var props = JSON.parse(feature.properties.properties);
-    this.properties = {};
 
-    for (var key in props) {
-        var prop = props[key];
-        var num = Number(prop);
-        var float = parseFloat(prop);
+    this.properties = extractProperties(feature);
+};
 
-        this.properties[key] = (isNaN(num) || isNaN(float)) ? prop : num;
+var Polygon = function(feature) {
+    this.properties = extractProperties(feature);
+
+    var rings = [];
+
+    var geom = feature.loadGeometry();
+    for (var g = 0; g < geom.length; g++) {
+        var points = geom[g];
+        var ring = [];
+        for (var p = 0; p < points.length; p++) {
+            ring.push(points[p]);
+        }
+        rings.push(ring);
     }
 
-    var ct = (typeof count === "number") ? count : this.properties.count;
-    this.properties.count = parseInt(ct, 10);
+    /*eslint-disable camelcase */
+    this.geometry = {};
+    this.geometry.type = "Polygon";
+    this.geometry.exterior_ring = rings[0];
+    this.geometry.interior_rings = rings.slice(1);
+    /*eslint-enable camelcase */
 };
 
 var extractFeatures = function(layer) {
@@ -55,9 +86,14 @@ var extractFeatures = function(layer) {
 };
 
 var makeFeature = function(raw) {
-    if (raw.type === POINT) {
+    switch (raw.type) {
+    case POINT:
         return new Point(raw);
-    } else {
+    case LINE_STRING:
+        throw new Error("TODO: Support LINE_STRING");
+    case POLYGON:
+        return new Polygon(raw);
+    default:
         throw new Error("Unsupported geometry type: " + raw.type);
     }
 };
@@ -114,6 +150,7 @@ var render = function(req, res) {
     var ds = new mapnik.MemoryDatasource({"extent": TILE_EXTENT.join()});
     features.forEach(function(ft) {
         ds.add(ft);
+        ds.add({ wkt: "POINT(10 20)" });
     });
 
     var map = new mapnik.Map(256, 256);

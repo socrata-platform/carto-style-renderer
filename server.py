@@ -1,30 +1,120 @@
 #!/usr/bin/env python
 """
-Pipeline together a few different mapnik examples in Python.
+Service to render pngs from vector tiles using Carto CSS.
 """
-
+import base64
 import mapnik                   # pylint: disable=import-error
+
+from errors import BadRequest, JsonKeyError, ServiceError
+from flask import Flask, jsonify, make_response, redirect, request, url_for
 from subprocess import Popen, PIPE
 
-RENDERER = None
-def style(carto_css):
+# All examples seem to use `app` not `APP`.
+app = Flask(__name__)           # pylint: disable=invalid-name
+
+
+def parse_tile(bpbf):
+    """
+    Parse a binary encoded vector tile (protobuffer) into an object.
+    """
+    pbf = base64.b64decode(bpbf)
+    return str(pbf)
+
+
+def render_css(carto_css, renderers=None):
     """
     Transform Carto CSS into Mapnik XML.
 
     Carto CSS must be formatted on a single line, ending in a line break.
     """
-    global RENDERER
+    renderer = None
 
-    if not RENDERER or not RENDERER.poll():
-        RENDERER = Popen(['node', 'style.js'],
+    if not renderers:
+        renderers = []
+
+    if len(renderers) == 0 or not renderers[0].poll():
+        renderer = Popen(['node', 'style'],
                          stdin=PIPE,
                          stdout=PIPE,
                          stderr=PIPE)
-    RENDERER.stdin.write(carto_css)
-    return RENDERER.stdout.readline()
+        renderers.append(renderer)
+
+    renderer.stdin.write(carto_css)
+    return renderer.stdout.readline()
 
 
-def main():
+def render_png(tile, zoom, xml):
+    """
+    Render the tile for the given zoom
+    """
+    return str([tile, zoom, xml])
+
+
+@app.errorhandler(ServiceError)
+def handle_invalid_usage(error):
+    """
+    Convert ServiceErrors to HTTP errors.
+    """
+    return make_response(error.message, error.status_code)
+
+
+@app.route("/")
+def index():
+    """
+    Redirect to /version from /.
+    """
+    return redirect(url_for('version'))
+
+
+@app.route("/version")
+def version():
+    """
+    Return the version of the service, currently hardcoded.
+    """
+    return jsonify(health='alive', version='0.0.1')
+
+
+@app.route("/style", methods=['POST'])
+def style():
+    """
+    Convert Carto CSS passed in via the `$style` query param into Mapnik XML.
+    """
+    body = request.get_json(silent=True)
+    if not body:
+        raise ServiceError("Malformed JSON.")
+
+    if 'style' in body:
+        return render_css(body['style'])
+    else:
+        raise JsonKeyError('style')
+
+
+@app.route("/render", methods=['POST'])
+def render():
+    """
+    Actually render the png.
+
+    Expects a JSON blob with 'style', 'zoom', and 'bpbf' values.
+    """
+    body = request.get_json(silent=True)
+    keys = ['bpbf', 'zoom', 'style']
+
+    if not body:
+        raise BadRequest("Malformed JSON.")
+
+    if set(keys) <= set(body):
+        try:
+            tile = parse_tile(body['bpbf'])
+            zoom = int(body['zoom'])
+            xml = render_css(body['style'])
+            return render_png(tile, zoom, xml)
+        except:
+            raise BadRequest('JSON value "zoom" must be an integer.')
+    else:
+        raise JsonKeyError(keys)
+
+
+def old_main():
     """
     Main function.
     """
@@ -54,7 +144,7 @@ def main():
     source.add_feature(feat_poly)
 
     tile = mapnik.Map(256, 256)
-    xml = style("#main{marker-line-color:#00C;marker-width:1}")
+    xml = render_css("#main{marker-line-color:#00C;marker-width:1}")
     mapnik.load_map_from_string(tile, xml)
     tile.zoom_to_box(mapnik.Box2d(0, 0, 255, 255))
 
@@ -66,4 +156,5 @@ def main():
 
     mapnik.render_to_file(tile, 'test.png', 'png')
 
-main()
+if __name__ == "__main__":
+    app.run(debug=True)

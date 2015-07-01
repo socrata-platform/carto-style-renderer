@@ -18,17 +18,14 @@ function CartoMML(styleData) {
     this.Stylesheet = [ { data: styleData } ];
 
     var xml = renderer.render(this).toString();
-    xml = xml.replace(/<Layer[\s\S]*>[\s\S]*<\/Layer>/, "");
-    xml = xml.replace(/^\s*[\r\n]/gm, "");
+    xml = xml.replace(CartoMML.joinLines, "");
+    xml = xml.replace(CartoMML.collapseEmpty, "><");
 
     this.xml = xml;
 }
 
-module.exports = CartoMML;
-
-var style = function(cartoCss) {
-    return new CartoMML(cartoCss).xml;
-};
+CartoMML.joinLines = new RegExp(/(?:\r\n|\r|\n)/g);
+CartoMML.collapseEmpty = new RegExp(/>\s*</g);
 
 if (require.main === module) {
     process.stdin.setEncoding("utf8");
@@ -36,10 +33,9 @@ if (require.main === module) {
     process.stdin.on("readable", function() {
         var line = process.stdin.read();
         if (line !== null) {
-            var xml = style(line).replace(/(?:\r\n|\r|\n)/g, "");
+            var xml = new CartoMML(line).xml;
+
             process.stdout.write(xml + "\n");
         }
     });
-} else {
-    module.exports.style = style;
 }

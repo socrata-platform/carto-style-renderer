@@ -4,19 +4,24 @@ Pipeline together a few different mapnik examples in Python.
 """
 
 import mapnik                   # pylint: disable=import-error
+from subprocess import Popen, PIPE
 
-XML_HEAD = """<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE Map[]>
-<Map>"""
-XML_FOOT = """<Layer name="main">
-<StyleName>main</StyleName>
-</Layer>
-</Map>"""
+RENDERER = None
+def style(carto_css):
+    """
+    Transform Carto CSS into Mapnik XML.
 
-XML = ''
-with open('examples/main.xml') as f:
-    XML = XML_HEAD + f.read() + XML_FOOT
-    XML = XML.replace('name="style"', 'name="main"')
+    Carto CSS must be formatted on a single line, ending in a line break.
+    """
+    global RENDERER
+
+    if not RENDERER or not RENDERER.poll():
+        RENDERER = Popen(['node', 'style.js'],
+                         stdin=PIPE,
+                         stdout=PIPE,
+                         stderr=PIPE)
+    RENDERER.stdin.write(carto_css)
+    return RENDERER.stdout.readline()
 
 
 def main():
@@ -49,7 +54,8 @@ def main():
     source.add_feature(feat_poly)
 
     tile = mapnik.Map(256, 256)
-    mapnik.load_map_from_string(tile, XML)
+    xml = style("#main{marker-line-color:#00C;marker-width:1}")
+    mapnik.load_map_from_string(tile, xml)
     tile.zoom_to_box(mapnik.Box2d(0, 0, 255, 255))
 
     layer = mapnik.Layer('main')
@@ -58,6 +64,6 @@ def main():
 
     tile.layers.append(layer)
 
-    mapnik.render_to_file(tile, 'python-test.png', 'png')
+    mapnik.render_to_file(tile, 'test.png', 'png')
 
 main()

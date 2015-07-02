@@ -18,6 +18,39 @@ from vector_tile_pb2 import Tile
 app = Flask(__name__)           # pylint: disable=invalid-name
 
 
+# Some of the tile parsing logic is based on code from here:
+# https://github.com/mapbox/vector-tile-py
+
+def decode_coord(coord):
+    """
+    Decode a single coordinate.
+    """
+    return ((coord >> 1) ^ (-(coord & 1))) / 16
+
+
+def create_wkt(geometry, geom_type):
+    """
+    Create Well Known Text for `geometry` based on `geom_type`.
+    """
+
+    if geom_type == 1:      # Point.
+        x_px, y_px = decode_coord(geometry[1]), decode_coord(geometry[2])
+        return "POINT({} {})".format(x_px, y_px)
+    elif geom_type == 2:    # Line String.
+        raise BadRequest("TODO: Not implemented!")
+    elif geom_type == 3:    # Polygon.
+        raise BadRequest("TODO: Not implemented!")
+    else:
+        raise BadRequest("Invalid geometry type!")
+
+
+def parse_properties(feature):
+    """
+    Parse properties from `feature`.
+    """
+    return {}                   # TODO
+
+
 def parse_tile(bpbf):
     """
     Parse a binary encoded vector tile (protobuffer) into an object.
@@ -25,7 +58,19 @@ def parse_tile(bpbf):
     pbf = base64.b64decode(bpbf)
     tile = Tile()
     tile.ParseFromString(pbf)
-    return str(pbf) + str(tile)
+    layers = []
+    for proto_layer in tile.layers:
+        features = []
+        layer = {'name': proto_layer.name}
+        layer['features'] = features
+        layers.append(layer)
+
+        for feature in proto_layer.features:
+            geom = create_wkt(feature.geometry, feature.type)
+            props = parse_properties(feature)
+            features.append({'geometry': geom, 'properties': props})
+
+    return layers
 
 
 def render_css(carto_css, renderers=None):
@@ -54,7 +99,28 @@ def render_png(tile, zoom, xml):
     """
     Render the tile for the given zoom
     """
-    return str([tile, zoom, xml])
+    ctx = mapnik.Context()
+    map_tile = mapnik.Map(256, 256)
+    mapnik.load_map_from_string(map_tile, xml)
+    map_tile.zoom_to_box(mapnik.Box2d(0, 0, 255, 255))
+
+    for layer in tile:
+        source = mapnik.MemoryDatasource()
+        map_layer = mapnik.Layer("main")
+        map_layer.datasource = source
+
+        for feature in layer['features']:
+            feat = mapnik.Feature(ctx, 0)
+            feat.add_geometries_from_wkt(feature['geometry'])
+            source.add_feature(feat)
+
+        map_layer.styles.append("main")
+        map_tile.layers.append(map_layer)
+
+    image = mapnik.Image(map_tile.width, map_tile.height)
+    mapnik.render(map_tile, image)
+
+    return image.tostring("png")
 
 
 @app.errorhandler(ServiceError)
@@ -110,13 +176,16 @@ def render():
         raise BadRequest("Malformed JSON.")
 
     if set(keys) <= set(body):
+        zoom = None
         try:
-            tile = parse_tile(body['bpbf'])
             zoom = int(body['zoom'])
-            xml = render_css(body['style'])
-            return render_png(tile, zoom, xml)
-        except:
+        except ValueError:
             raise BadRequest('JSON value "zoom" must be an integer.')
+
+        tile = parse_tile(body['bpbf'])
+        xml = render_css(body['style'])
+        return render_png(tile, zoom, xml)
+
     else:
         raise JsonKeyError(keys)
 

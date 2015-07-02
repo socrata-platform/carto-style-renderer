@@ -6,12 +6,17 @@ You can exercise it with the following curl commands.
 
 Transform CartoCSS to MapnikXML.
 ```
-curl localhost:4096/style -H 'Content-type: application/json' -d @examples/main.json
+curl localhost:4096/style -H 'Content-type: application/json' -d @carto_renderer/examples/main.json
 ```
 
 Render an image to `test.png`:
 ```
-curl -o test.png localhost:4096/render -H 'Content-type: application/json' -d @examples/main.json
+curl -o test.png localhost:4096/render -H 'Content-type: application/json' -d @carto_renderer/examples/main.json
+```
+
+## Start the Service (dev server) ##
+```
+carto_renderer/service.py
 ```
 
 ## Testing ##

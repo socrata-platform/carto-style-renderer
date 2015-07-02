@@ -5,9 +5,14 @@ Service to render pngs from vector tiles using Carto CSS.
 import base64
 import mapnik                   # pylint: disable=import-error
 
-from errors import BadRequest, JsonKeyError, ServiceError
 from flask import Flask, jsonify, make_response, redirect, request, url_for
 from subprocess import Popen, PIPE
+
+# I think pylint doesn't like how I set up my path...
+# pylint: disable=no-name-in-module
+from errors import BadRequest, JsonKeyError, ServiceError
+from vector_tile_pb2 import Tile
+# pylint: enable=no-name-in-module
 
 # All examples seem to use `app` not `APP`.
 app = Flask(__name__)           # pylint: disable=invalid-name
@@ -18,7 +23,9 @@ def parse_tile(bpbf):
     Parse a binary encoded vector tile (protobuffer) into an object.
     """
     pbf = base64.b64decode(bpbf)
-    return str(pbf)
+    tile = Tile()
+    print(help(tile))
+    return str(pbf) + str(tile)
 
 
 def render_css(carto_css, renderers=None):
@@ -81,7 +88,7 @@ def style():
     """
     body = request.get_json(silent=True)
     if not body:
-        raise ServiceError("Malformed JSON.")
+        raise BadRequest("Malformed JSON.")
 
     if 'style' in body:
         return render_css(body['style'])
@@ -157,4 +164,4 @@ def old_main():
     mapnik.render_to_file(tile, 'test.png', 'png')
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=4096)

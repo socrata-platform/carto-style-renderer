@@ -1,6 +1,6 @@
 # pylint: disable=missing-docstring,line-too-long
 
-from carto_renderer import server
+from carto_renderer import service  # pylint: disable=import-error
 
 
 def test_render_css():
@@ -11,8 +11,8 @@ def test_render_css():
     marker-width:1
     } """
 
-    assert server.render_css(oneline) == expected
-    assert server.render_css(multiline) == expected
+    assert service.render_css(oneline) == expected
+    assert service.render_css(multiline) == expected
 
 
 def test_parse_tile():

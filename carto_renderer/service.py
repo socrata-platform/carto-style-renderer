@@ -105,8 +105,9 @@ def render_png(tile, zoom, xml):
     map_tile.zoom_to_box(mapnik.Box2d(0, 0, 255, 255))
 
     for layer in tile:
+        name = layer['name'].encode('ascii', 'ignore')
         source = mapnik.MemoryDatasource()
-        map_layer = mapnik.Layer("main")
+        map_layer = mapnik.Layer(name)
         map_layer.datasource = source
 
         for feature in layer['features']:
@@ -114,7 +115,7 @@ def render_png(tile, zoom, xml):
             feat.add_geometries_from_wkt(feature['geometry'])
             source.add_feature(feat)
 
-        map_layer.styles.append("main")
+        map_layer.styles.append(name)
         map_tile.layers.append(map_layer)
 
     image = mapnik.Image(map_tile.width, map_tile.height)

@@ -9,7 +9,7 @@ from flask import Flask, jsonify, make_response, redirect, request, url_for
 from subprocess import Popen, PIPE
 
 # I think pylint doesn't like how I set up my path...
-# pylint: disable=no-name-in-module
+# pylint: disable=no-name-in-module, import-error
 from errors import BadRequest, JsonKeyError, ServiceError
 from vector_tile_pb2 import Tile
 # pylint: enable=no-name-in-module
@@ -24,7 +24,7 @@ def parse_tile(bpbf):
     """
     pbf = base64.b64decode(bpbf)
     tile = Tile()
-    print(help(tile))
+    tile.ParseFromString(pbf)
     return str(pbf) + str(tile)
 
 

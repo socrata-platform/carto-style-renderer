@@ -38,6 +38,6 @@ class JsonKeyError(BadRequest):
         else:
             beg = keys[:-1]
             message = JsonKeyError.plural.format('", "'.join(beg),
-                                                   keys[-1])
+                                                 keys[-1])
 
         super(self.__class__, self).__init__(message)

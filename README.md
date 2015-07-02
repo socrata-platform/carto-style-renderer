@@ -14,3 +14,15 @@ Render an image to `test.png`:
 curl -o test.png localhost:4096/render -H 'Content-type: application/json' -d @examples/main.json
 ```
 
+## Testing ##
+The tests are run using py.test
+
+You can install it by running:
+```
+pip install pytest
+```
+
+Run tests from the root directory:
+```
+PYTHONPATH=. py.test
+```

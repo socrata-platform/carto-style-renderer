@@ -2,75 +2,24 @@
 """
 Service to render pngs from vector tiles using Carto CSS.
 """
+import collections
 import base64
 import mapnik                   # pylint: disable=import-error
+import mapbox_vector_tile       # pylint: disable=import-error
 
 from flask import Flask, jsonify, make_response, redirect, request, url_for
 from subprocess import Popen, PIPE
 
-# I think pylint doesn't like how I set up my path...
-# pylint: disable=no-name-in-module, import-error
+# pylint: disable=no-name-in-module
 from errors import BadRequest, JsonKeyError, ServiceError
-from vector_tile_pb2 import Tile
 # pylint: enable=no-name-in-module
 
 # All examples seem to use `app` not `APP`.
 app = Flask(__name__)           # pylint: disable=invalid-name
 
-
-# Some of the tile parsing logic is based on code from here:
-# https://github.com/mapbox/vector-tile-py
-
-def decode_coord(coord):
-    """
-    Decode a single coordinate.
-    """
-    return ((coord >> 1) ^ (-(coord & 1))) / 16
-
-
-def create_wkt(geometry, geom_type):
-    """
-    Create Well Known Text for `geometry` based on `geom_type`.
-    """
-
-    if geom_type == 1:      # Point.
-        x_px, y_px = decode_coord(geometry[1]), decode_coord(geometry[2])
-        return "POINT({} {})".format(x_px, y_px)
-    elif geom_type == 2:    # Line String.
-        raise BadRequest("TODO: Not implemented!")
-    elif geom_type == 3:    # Polygon.
-        raise BadRequest("TODO: Not implemented!")
-    else:
-        raise BadRequest("Invalid geometry type!")
-
-
-def parse_properties(feature):
-    """
-    Parse properties from `feature`.
-    """
-    return {}                   # TODO
-
-
-def parse_tile(bpbf):
-    """
-    Parse a binary encoded vector tile (protobuffer) into an object.
-    """
-    pbf = base64.b64decode(bpbf)
-    tile = Tile()
-    tile.ParseFromString(pbf)
-    layers = []
-    for proto_layer in tile.layers:
-        features = []
-        layer = {'name': proto_layer.name}
-        layer['features'] = features
-        layers.append(layer)
-
-        for feature in proto_layer.features:
-            geom = create_wkt(feature.geometry, feature.type)
-            props = parse_properties(feature)
-            features.append({'geometry': geom, 'properties': props})
-
-    return layers
+# Variables for Vector Tiles.
+BASE_ZOOM = 29
+TILE_ZOOM_FACTOR = 16
 
 
 def render_css(carto_css, renderers=None):
@@ -95,24 +44,56 @@ def render_css(carto_css, renderers=None):
     return renderer.stdout.readline()
 
 
+GEOM_TYPES = {
+    1: 'POINT',
+    2: 'LINE_STRING',
+    3: 'POLYGON'
+    }
+
+
+def build_wkt(geom_code, geometries):
+    """
+    Build a Well Known Text of the appropriate type.
+    """
+    geom_type = GEOM_TYPES[geom_code]
+
+    def collapse(coords):       # pylint: disable=missing-docstring
+        if len(coords) < 1:
+            return '()'
+
+        first = coords[0]
+        if not isinstance(first, collections.Iterable):
+            return " ".join([str(c / TILE_ZOOM_FACTOR) for c in coords])
+        else:
+            return '({})'.format(','.join([collapse(c) for c in coords]))
+
+    return geom_type + collapse(geometries)
+
+
 def render_png(tile, zoom, xml):
     """
     Render the tile for the given zoom
     """
     ctx = mapnik.Context()
+
     map_tile = mapnik.Map(256, 256)
+    scale_denom = 1 << (BASE_ZOOM - int(zoom or 1))
+    scale_factor = scale_denom / map_tile.scale_denominator()
+
+    map_tile.zoom(scale_factor) # TODO: Is overriden by zoom_to_box.
     mapnik.load_map_from_string(map_tile, xml)
     map_tile.zoom_to_box(mapnik.Box2d(0, 0, 255, 255))
 
-    for layer in tile:
-        name = layer['name'].encode('ascii', 'ignore')
+    for (name, features) in tile.items():
+        name = name.encode('ascii', 'ignore')
         source = mapnik.MemoryDatasource()
         map_layer = mapnik.Layer(name)
         map_layer.datasource = source
 
-        for feature in layer['features']:
+        for feature in features:
+            wkt = build_wkt(feature['type'], feature['geometry'])
             feat = mapnik.Feature(ctx, 0)
-            feat.add_geometries_from_wkt(feature['geometry'])
+            feat.add_geometries_from_wkt(wkt)
             source.add_feature(feat)
 
         map_layer.styles.append(name)
@@ -183,7 +164,8 @@ def render():
         except ValueError:
             raise BadRequest('JSON value "zoom" must be an integer.')
 
-        tile = parse_tile(body['bpbf'])
+        pbf = base64.b64decode(body['bpbf'])
+        tile = mapbox_vector_tile.decode(pbf)
         xml = render_css(body['style'])
         return render_png(tile, zoom, xml)
 

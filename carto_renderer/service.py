@@ -2,20 +2,22 @@
 """
 Service to render pngs from vector tiles using Carto CSS.
 """
+# Pylint appears to not like something about my PYTHONPATH.
+# pylint: disable=import-error
+import mapnik
+import mapbox_vector_tile
+from tornado.ioloop import IOLoop
+from tornado.web import Application, RedirectHandler, RequestHandler, url
+# pylint: enable=import-error
+
+import json
+# import logging
 import collections
 import base64
-import mapnik                   # pylint: disable=import-error
-import mapbox_vector_tile       # pylint: disable=import-error
 
-from flask import Flask, jsonify, make_response, redirect, request, url_for
 from subprocess import Popen, PIPE
 
-# pylint: disable=no-name-in-module
-from errors import BadRequest, JsonKeyError, ServiceError
-# pylint: enable=no-name-in-module
-
-# All examples seem to use `app` not `APP`.
-app = Flask(__name__)           # pylint: disable=invalid-name
+from carto_renderer.errors import BadRequest, JsonKeyError, ServiceError
 
 # Variables for Vector Tiles.
 BASE_ZOOM = 29
@@ -80,7 +82,7 @@ def render_png(tile, zoom, xml):
     scale_denom = 1 << (BASE_ZOOM - int(zoom or 1))
     scale_factor = scale_denom / map_tile.scale_denominator()
 
-    map_tile.zoom(scale_factor) # TODO: Is overriden by zoom_to_box.
+    map_tile.zoom(scale_factor)  # TODO: Is overriden by zoom_to_box.
     mapnik.load_map_from_string(map_tile, xml)
     map_tile.zoom_to_box(mapnik.Box2d(0, 0, 255, 255))
 
@@ -104,116 +106,105 @@ def render_png(tile, zoom, xml):
 
     return image.tostring("png")
 
-
-@app.errorhandler(ServiceError)
-def handle_invalid_usage(error):
-    """
-    Convert ServiceErrors to HTTP errors.
-    """
-    return make_response(error.message, error.status_code)
-
-
-@app.route("/")
-def index():
-    """
-    Redirect to /version from /.
-    """
-    return redirect(url_for('version'))
+# TODO: REPLACE
+# def handle_invalid_usage(error):
+#     """
+#     Convert ServiceErrors to HTTP errors.
+#     """
+#     return make_response(error.message, error.status_code)
 
 
-@app.route("/version")
-def version():
+# pylint: disable=no-init,too-few-public-methods,no-member
+class VersionHandler(RequestHandler):
     """
     Return the version of the service, currently hardcoded.
     """
-    return jsonify(health='alive', version='0.0.1')
+    version = json.dumps({'health': 'alive',
+                          'version': '0.0.1'})
+
+    def get(self):
+        """
+        Return the version of the service, currently hardcoded.
+        """
+        self.write(VersionHandler.version)
 
 
-@app.route("/style", methods=['POST'])
-def style():
+class StyleHandler(RequestHandler):
     """
-    Convert Carto CSS passed in via the `$style` query param into Mapnik XML.
+    Convert Carto CSS passed in via the `$style` query param
+    into Mapnik XML.
     """
-    body = request.get_json(silent=True)
-    if not body:
-        raise BadRequest("Malformed JSON.")
+    def post(self):
+        """
+        Convert Carto CSS passed in via the `$style` query param
+        into Mapnik XML.
+        """
+        body = self.request.body
 
-    if 'style' in body:
-        return render_css(body['style'])
-    else:
-        raise JsonKeyError('style')
+        try:
+            jbody = json.loads(body)
+        except ValueError:
+            jbody = None
+
+        if not jbody:
+            raise BadRequest("Could not parse JSON.")
+
+        if 'style' in jbody:
+            self.write(render_css(jbody['style']))
+        else:
+            raise JsonKeyError('style')
 
 
-@app.route("/render", methods=['POST'])
-def render():
+class RenderHandler(RequestHandler):
     """
     Actually render the png.
 
     Expects a JSON blob with 'style', 'zoom', and 'bpbf' values.
     """
-    body = request.get_json(silent=True)
-    keys = ['bpbf', 'zoom', 'style']
+    def post(self):
+        """
+        Actually render the png.
 
-    if not body:
-        raise BadRequest("Malformed JSON.")
+        Expects a JSON blob with 'style', 'zoom', and 'bpbf' values.
+        """
+        body = self.request.body
 
-    if set(keys) <= set(body):
-        zoom = None
         try:
-            zoom = int(body['zoom'])
+            jbody = json.loads(body)
         except ValueError:
-            raise BadRequest('JSON value "zoom" must be an integer.')
+            jbody = None
 
-        pbf = base64.b64decode(body['bpbf'])
-        tile = mapbox_vector_tile.decode(pbf)
-        xml = render_css(body['style'])
-        return render_png(tile, zoom, xml)
+        if not jbody:
+            raise BadRequest("Could not parse json.")
 
-    else:
-        raise JsonKeyError(keys)
+        keys = ['bpbf', 'zoom', 'style']
+
+        if not all([k in jbody for k in keys]):
+            raise JsonKeyError(keys)
+        else:
+            zoom = jbody['zoom']
+            pbf = base64.b64decode(jbody['bpbf'])
+            tile = mapbox_vector_tile.decode(pbf)
+            xml = render_css(jbody['style'])
+            self.write(render_png(tile, zoom, xml))
 
 
-def old_main():
+def main():
     """
-    Main function.
+    Actually fire up the web server.
+
+    Listens on 4096.
     """
-    ctx = mapnik.Context()
+    routes = [
+        url(r'/', RedirectHandler, {'url': '/version'}),
+        url(r'/version', VersionHandler),
+        url(r'/style', StyleHandler),
+        url(r'/render', RenderHandler),
+    ]
 
-    feat11 = mapnik.Feature(ctx, 11)
-    feat11.add_geometries_from_wkt("POINT(10 10)")
-
-    feat22 = mapnik.Feature(ctx, 22)  # What do the args mean?
-    feat22.add_geometries_from_wkt("POINT(20 20)")
-
-    feat33 = mapnik.Feature(ctx, 33)  # What do the args mean?
-    feat22.add_geometries_from_wkt("POINT(30 30)")
-
-    feat44 = mapnik.Feature(ctx, 44)  # What do the args mean?
-    feat44.add_geometries_from_wkt("POINT(40 40)")
-
-    # Still need to figure out what the ID is used for...
-    feat_poly = mapnik.Feature(ctx, 99)
-    feat_poly.add_geometries_from_wkt("POLYGON((64 64,96 128,128 64,64 64))")
-
-    source = mapnik.MemoryDatasource()
-    source.add_feature(feat11)
-    source.add_feature(feat22)
-    source.add_feature(feat33)
-    source.add_feature(feat44)
-    source.add_feature(feat_poly)
-
-    tile = mapnik.Map(256, 256)
-    xml = render_css("#main{marker-line-color:#00C;marker-width:1}")
-    mapnik.load_map_from_string(tile, xml)
-    tile.zoom_to_box(mapnik.Box2d(0, 0, 255, 255))
-
-    layer = mapnik.Layer('main')
-    layer.datasource = source
-    layer.styles.append('main')
-
-    tile.layers.append(layer)
-
-    mapnik.render_to_file(tile, 'test.png', 'png')
+    app = Application(routes)
+    app.listen(4096)
+    IOLoop.current().start()
 
 if __name__ == "__main__":
-    app.run(debug=True, port=4096)
+    main()

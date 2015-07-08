@@ -21,7 +21,7 @@ class BadRequest(ServiceError):
         super(self.__class__, self).__init__(message, 400)
 
 
-class JsonKeyError(BadRequest):
+class JsonKeyError(ServiceError):
     """
     Error to throw when keys are missing.
     """
@@ -40,4 +40,4 @@ class JsonKeyError(BadRequest):
             message = JsonKeyError.plural.format('", "'.join(beg),
                                                  keys[-1])
 
-        super(self.__class__, self).__init__(message)
+        super(self.__class__, self).__init__(message, 400)

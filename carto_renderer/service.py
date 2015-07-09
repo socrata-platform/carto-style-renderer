@@ -174,8 +174,9 @@ class StyleHandler(BaseHandler):
         into Mapnik XML.
         """
         content_type = self.request.headers['content-type']
-        if content_type.lower != 'application/json':
-            raise BadRequest("Invalid Content-Type: '{}'; expected 'application/json'".format(content_type))
+        if not content_type.lower().startswith('application/json'):
+            message = "Invalid Content-Type: '{}'; expected 'application/json'"
+            raise BadRequest(message.format(content_type))
 
         body = self.request.body
 
@@ -207,8 +208,9 @@ class RenderHandler(BaseHandler):
         Expects a JSON blob with 'style', 'zoom', and 'bpbf' values.
         """
         content_type = self.request.headers['content-type']
-        if content_type.lower != 'application/json':
-            raise BadRequest("Invalid Content-Type: '{}'; expected 'application/json'".format(content_type))
+        if not content_type.lower().startswith('application/json'):
+            message = "Invalid Content-Type: '{}'; expected 'application/json'"
+            raise BadRequest(message.format(content_type))
 
         body = self.request.body
 

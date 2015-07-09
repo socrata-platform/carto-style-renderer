@@ -11,7 +11,7 @@ from tornado.web import Application, RedirectHandler, RequestHandler, url
 # pylint: enable=import-error
 
 import json
-# import logging
+import logging
 import collections
 import base64
 
@@ -47,6 +47,7 @@ def render_css(carto_css, renderers=None):
 
 
 GEOM_TYPES = {
+    0: 'UNKNOWN',
     1: 'POINT',
     2: 'LINE_STRING',
     3: 'POLYGON'
@@ -56,8 +57,10 @@ GEOM_TYPES = {
 def build_wkt(geom_code, geometries):
     """
     Build a Well Known Text of the appropriate type.
+
+    Returns None on failure.
     """
-    geom_type = GEOM_TYPES[geom_code]
+    geom_type = GEOM_TYPES.get(geom_code, 0)
 
     def collapse(coords):       # pylint: disable=missing-docstring
         if len(coords) < 1:
@@ -69,7 +72,16 @@ def build_wkt(geom_code, geometries):
         else:
             return '({})'.format(','.join([collapse(c) for c in coords]))
 
-    return geom_type + collapse(geometries)
+    collapsed = collapse(geometries)
+
+    if geom_type == 'UNKNOWN':
+        logging.warn('Unknown geometry code: %s', geom_code)
+        return None
+
+    if geom_type != 'POINT':
+        collapsed = '({})'.format(collapsed)
+
+    return geom_type + collapsed
 
 
 def render_png(tile, zoom, xml):
@@ -95,7 +107,11 @@ def render_png(tile, zoom, xml):
         for feature in features:
             wkt = build_wkt(feature['type'], feature['geometry'])
             feat = mapnik.Feature(ctx, 0)
-            feat.add_geometries_from_wkt(wkt)
+            if wkt:
+                try:
+                    feat.add_geometries_from_wkt(wkt)
+                except RuntimeError:
+                    logging.warn("Failed to parse WKT: %s", wkt)
             source.add_feature(feat)
 
         map_layer.styles.append(name)
@@ -106,30 +122,49 @@ def render_png(tile, zoom, xml):
 
     return image.tostring("png")
 
-# TODO: REPLACE
-# def handle_invalid_usage(error):
-#     """
-#     Convert ServiceErrors to HTTP errors.
-#     """
-#     return make_response(error.message, error.status_code)
-
 
 # pylint: disable=no-init,too-few-public-methods,no-member
-class VersionHandler(RequestHandler):
+class BaseHandler(RequestHandler):
+    """
+    Convert ServiceErrors to HTTP errors.
+    """
+    def _handle_request_exception(self, err):
+        """
+        Convert ServiceErrors to HTTP errors.
+        """
+        payload = {}
+        if isinstance(err, ServiceError):
+            status_code = err.status_code
+            print(err.request_body)
+            if err.request_body:
+                payload['request_body'] = err.request_body
+        else:
+            status_code = 500
+
+        payload['resultCode'] = status_code
+        payload['message'] = err.message
+
+        self.clear()
+        self.set_status(status_code)
+        self.write(payload)
+        self.finish()
+
+
+class VersionHandler(BaseHandler):
     """
     Return the version of the service, currently hardcoded.
     """
-    version = json.dumps({'health': 'alive',
-                          'version': '0.0.1'})
+    version = {'health': 'alive', 'version': '0.0.1'}
 
     def get(self):
         """
         Return the version of the service, currently hardcoded.
         """
         self.write(VersionHandler.version)
+        self.finish()
 
 
-class StyleHandler(RequestHandler):
+class StyleHandler(BaseHandler):
     """
     Convert Carto CSS passed in via the `$style` query param
     into Mapnik XML.
@@ -147,15 +182,16 @@ class StyleHandler(RequestHandler):
             jbody = None
 
         if not jbody:
-            raise BadRequest("Could not parse JSON.")
+            raise BadRequest("Could not parse JSON.", body)
 
         if 'style' in jbody:
             self.write(render_css(jbody['style']))
+            self.finish()
         else:
-            raise JsonKeyError('style')
+            raise JsonKeyError('style', jbody)
 
 
-class RenderHandler(RequestHandler):
+class RenderHandler(BaseHandler):
     """
     Actually render the png.
 
@@ -175,18 +211,22 @@ class RenderHandler(RequestHandler):
             jbody = None
 
         if not jbody:
-            raise BadRequest("Could not parse json.")
+            raise BadRequest("Could not parse json.", bad_input=body)
 
         keys = ['bpbf', 'zoom', 'style']
 
         if not all([k in jbody for k in keys]):
-            raise JsonKeyError(keys)
+            raise JsonKeyError(keys, jbody)
         else:
-            zoom = jbody['zoom']
+            try:
+                zoom = int(jbody['zoom'])
+            except:
+                raise BadRequest("'zoom' must be an integer.")
             pbf = base64.b64decode(jbody['bpbf'])
             tile = mapbox_vector_tile.decode(pbf)
             xml = render_css(jbody['style'])
             self.write(render_png(tile, zoom, xml))
+            self.finish()
 
 
 def main():

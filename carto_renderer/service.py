@@ -135,7 +135,6 @@ class BaseHandler(RequestHandler):
         payload = {}
         if isinstance(err, ServiceError):
             status_code = err.status_code
-            print(err.request_body)
             if err.request_body:
                 payload['request_body'] = err.request_body
         else:
@@ -174,6 +173,10 @@ class StyleHandler(BaseHandler):
         Convert Carto CSS passed in via the `$style` query param
         into Mapnik XML.
         """
+        content_type = self.request.headers['content-type']
+        if content_type.lower != 'application/json':
+            raise BadRequest("Invalid Content-Type: '{}'; expected 'application/json'".format(content_type))
+
         body = self.request.body
 
         try:
@@ -203,6 +206,10 @@ class RenderHandler(BaseHandler):
 
         Expects a JSON blob with 'style', 'zoom', and 'bpbf' values.
         """
+        content_type = self.request.headers['content-type']
+        if content_type.lower != 'application/json':
+            raise BadRequest("Invalid Content-Type: '{}'; expected 'application/json'".format(content_type))
+
         body = self.request.body
 
         try:
@@ -221,7 +228,8 @@ class RenderHandler(BaseHandler):
             try:
                 zoom = int(jbody['zoom'])
             except:
-                raise BadRequest("'zoom' must be an integer.")
+                raise BadRequest("'zoom' must be an integer.",
+                                 request_body=body)
             pbf = base64.b64decode(jbody['bpbf'])
             tile = mapbox_vector_tile.decode(pbf)
             xml = render_css(jbody['style'])

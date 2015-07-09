@@ -133,6 +133,7 @@ class BaseHandler(RequestHandler):
         Convert ServiceErrors to HTTP errors.
         """
         payload = {}
+        logging.exception(err)
         if isinstance(err, ServiceError):
             status_code = err.status_code
             if err.request_body:

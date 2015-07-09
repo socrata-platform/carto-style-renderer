@@ -16,7 +16,7 @@ curl -o test.png localhost:4096/render -H 'Content-type: application/json' -d @c
 
 ## Start the Service (dev server) ##
 ```
-carto_renderer/service.py
+PYTHONPATH=. carto_renderer/service.py
 ```
 
 ## Testing ##

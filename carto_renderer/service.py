@@ -24,26 +24,33 @@ BASE_ZOOM = 29
 TILE_ZOOM_FACTOR = 16
 
 
-def render_css(carto_css, renderers=None):
-    """
-    Transform Carto CSS into Mapnik XML.
+class CssRenderer(object):
+    def __init__(self):
+        self.renderer = self.start_renderer()
 
-    Carto CSS must be formatted on a single line, ending in a line break.
-    """
-    renderer = None
 
-    if not renderers:
-        renderers = []
+    def start_renderer(self):
+        print "Making a renderrerrererererr"
+        return Popen(['node', 'style'],
+                             stdin=PIPE,
+                             stdout=PIPE,
+                             stderr=PIPE)
 
-    if len(renderers) == 0 or not renderers[0].poll():
-        renderer = Popen(['node', 'style'],
-                         stdin=PIPE,
-                         stdout=PIPE,
-                         stderr=PIPE)
-        renderers.append(renderer)
+    def is_alive(self):
+        return self.renderer.poll() == None
 
-    renderer.stdin.write(carto_css)
-    return renderer.stdout.readline()
+
+    def render_css(self, carto_css):
+        """
+        Transform Carto CSS into Mapnik XML.
+
+        Carto CSS must be formatted on a single line, ending in a line break.
+        """
+        if not self.is_alive():
+            self.renderer = self.start_renderer()
+
+        self.renderer.stdin.write(carto_css)
+        return self.renderer.stdout.readline()
 
 
 GEOM_TYPES = {
@@ -169,6 +176,9 @@ class StyleHandler(BaseHandler):
     Convert Carto CSS passed in via the `$style` query param
     into Mapnik XML.
     """
+    def initialize(self, css_renderer):
+        self.css_renderer = css_renderer
+
     def post(self):
         """
         Convert Carto CSS passed in via the `$style` query param
@@ -190,7 +200,7 @@ class StyleHandler(BaseHandler):
             raise BadRequest("Could not parse JSON.", body)
 
         if 'style' in jbody:
-            self.write(render_css(jbody['style']))
+            self.write(self.css_renderer.render_css(jbody['style']))
             self.finish()
         else:
             raise JsonKeyError('style', jbody)
@@ -202,6 +212,9 @@ class RenderHandler(BaseHandler):
 
     Expects a JSON blob with 'style', 'zoom', and 'bpbf' values.
     """
+    def initialize(self, css_renderer):
+        self.css_renderer = css_renderer
+
     def post(self):
         """
         Actually render the png.
@@ -235,7 +248,7 @@ class RenderHandler(BaseHandler):
                                  request_body=body)
             pbf = base64.b64decode(jbody['bpbf'])
             tile = mapbox_vector_tile.decode(pbf)
-            xml = render_css(jbody['style'])
+            xml = self.css_renderer.render_css(jbody['style'])
             self.write(render_png(tile, zoom, xml))
             self.finish()
 
@@ -246,11 +259,15 @@ def main():
 
     Listens on 4096.
     """
+    opts = {
+        'css_renderer' : CssRenderer()
+    }
+
     routes = [
         url(r'/', RedirectHandler, {'url': '/version'}),
         url(r'/version', VersionHandler),
-        url(r'/style', StyleHandler),
-        url(r'/render', RenderHandler),
+        url(r'/style', StyleHandler, opts),
+        url(r'/render', RenderHandler, opts),
     ]
 
     app = Application(routes)

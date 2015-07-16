@@ -3,4 +3,4 @@ node_modules
 test.png
 test.jpg
 *.pyc
-
+.hypothesis

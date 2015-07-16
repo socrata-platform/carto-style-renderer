@@ -2,13 +2,10 @@
 """
 Service to render pngs from vector tiles using Carto CSS.
 """
-# Pylint appears to not like something about my PYTHONPATH.
-# pylint: disable=import-error
 import mapnik
 import mapbox_vector_tile
 from tornado.ioloop import IOLoop
 from tornado.web import Application, RedirectHandler, RequestHandler, url
-# pylint: enable=import-error
 
 import json
 import logging
@@ -25,20 +22,28 @@ TILE_ZOOM_FACTOR = 16
 
 
 class CssRenderer(object):
+    """
+    Class to wrap talking to a renderer subprocess.
+    """
     def __init__(self):
-        self.renderer = self.start_renderer()
+        self.renderer = None
+        self.ensure_renderer()
 
+    def ensure_renderer(self):
+        """
+        Start a renderer subprocess if one is not alive.
 
-    def start_renderer(self):
-        print "Making a renderrerrererererr"
-        return Popen(['node', 'style'],
-                             stdin=PIPE,
-                             stdout=PIPE,
-                             stderr=PIPE)
+        Otherwise do nothing.
+        """
+        if not self.is_alive():
+            self.renderer = Popen(['node', 'style'],
+                                  stdin=PIPE,
+                                  stdout=PIPE,
+                                  stderr=PIPE)
 
     def is_alive(self):
-        return self.renderer.poll() == None
-
+        """True if the rendrerer subprocess is alive, False otherwise."""
+        return self.renderer and self.renderer.poll() is None
 
     def render_css(self, carto_css):
         """
@@ -46,19 +51,17 @@ class CssRenderer(object):
 
         Carto CSS must be formatted on a single line, ending in a line break.
         """
-        if not self.is_alive():
-            self.renderer = self.start_renderer()
+        self.ensure_renderer()
 
         self.renderer.stdin.write(carto_css)
         return self.renderer.stdout.readline()
 
 
 GEOM_TYPES = {
-    0: 'UNKNOWN',
     1: 'POINT',
     2: 'LINE_STRING',
     3: 'POLYGON'
-    }
+}
 
 
 def build_wkt(geom_code, geometries):
@@ -67,9 +70,12 @@ def build_wkt(geom_code, geometries):
 
     Returns None on failure.
     """
-    geom_type = GEOM_TYPES.get(geom_code, 0)
+    geom_type = GEOM_TYPES.get(geom_code, 'UNKNOWN')
 
-    def collapse(coords):       # pylint: disable=missing-docstring
+    def collapse(coords):
+        """
+        Helper, collapses lists into strings with appropriate parens.
+        """
         if len(coords) < 1:
             return '()'
 
@@ -92,6 +98,9 @@ def build_wkt(geom_code, geometries):
 
 
 def render_png(tile, zoom, xml):
+    # mapnik is installed in a non-standard way.
+    # It confuses pylint.
+    # pylint: disable=no-member
     """
     Render the tile for the given zoom
     """
@@ -130,8 +139,8 @@ def render_png(tile, zoom, xml):
     return image.tostring("png")
 
 
-# pylint: disable=no-init,too-few-public-methods,no-member
 class BaseHandler(RequestHandler):
+    # pylint: disable=abstract-method
     """
     Convert ServiceErrors to HTTP errors.
     """
@@ -158,6 +167,7 @@ class BaseHandler(RequestHandler):
 
 
 class VersionHandler(BaseHandler):
+    # pylint: disable=abstract-method
     """
     Return the version of the service, currently hardcoded.
     """
@@ -172,11 +182,14 @@ class VersionHandler(BaseHandler):
 
 
 class StyleHandler(BaseHandler):
+    # pylint: disable=abstract-method
     """
     Convert Carto CSS passed in via the `$style` query param
     into Mapnik XML.
     """
     def initialize(self, css_renderer):
+        # pylint: disable=arguments-differ
+        """Magic Tornado replacement for __init__."""
         self.css_renderer = css_renderer
 
     def post(self):
@@ -207,12 +220,15 @@ class StyleHandler(BaseHandler):
 
 
 class RenderHandler(BaseHandler):
+    # pylint: disable=abstract-method
     """
     Actually render the png.
 
     Expects a JSON blob with 'style', 'zoom', and 'bpbf' values.
     """
     def initialize(self, css_renderer):
+        # pylint: disable=arguments-differ
+        """Magic Tornado replacement for __init__."""
         self.css_renderer = css_renderer
 
     def post(self):
@@ -259,15 +275,15 @@ def main():
 
     Listens on 4096.
     """
-    opts = {
-        'css_renderer' : CssRenderer()
+    handler_opts = {
+        'css_renderer': CssRenderer()
     }
 
     routes = [
         url(r'/', RedirectHandler, {'url': '/version'}),
         url(r'/version', VersionHandler),
-        url(r'/style', StyleHandler, opts),
-        url(r'/render', RenderHandler, opts),
+        url(r'/style', StyleHandler, handler_opts),
+        url(r'/render', RenderHandler, handler_opts),
     ]
 
     app = Application(routes)

@@ -18,7 +18,9 @@ class BadRequest(ServiceError):
     Base class for 400 errors.
     """
     def __init__(self, message, request_body=None):
-        super(BadRequest, self).__init__(message, 400, request_body=request_body)
+        super(BadRequest, self).__init__(message,
+                                         400,
+                                         request_body=request_body)
 
 
 class JsonKeyError(ServiceError):

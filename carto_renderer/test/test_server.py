@@ -1,6 +1,9 @@
-# pylint: disable=missing-docstring,line-too-long
+# pylint: disable=missing-docstring,line-too-long,import-error
+from hypothesis import assume, given
+from hypothesis.strategies import integers, sampled_from
 
-from carto_renderer import service  # pylint: disable=import-error
+from carto_renderer import service
+from carto_renderer.service import CssRenderer, build_wkt
 
 
 def test_render_css():
@@ -11,9 +14,24 @@ def test_render_css():
     marker-width:1
     } """
 
-    assert service.render_css(oneline) == expected
-    assert service.render_css(multiline) == expected
+    renderer = CssRenderer()
+    assert renderer.render_css(oneline) == expected
+    assert renderer.render_css(multiline) == expected
 
 
-def test_parse_tile():
-    pass
+def test_ensure_renderer():
+    renderer = CssRenderer()
+    expected = renderer.renderer
+    renderer.ensure_renderer()
+
+    actual = renderer.renderer
+    assert actual == expected
+
+
+@given(integers())
+def test_build_wkt_invalid(geom_code):
+    unused = []
+
+    assume(geom_code not in service.GEOM_TYPES)
+    wkt = build_wkt(geom_code, unused)
+    assert wkt is None

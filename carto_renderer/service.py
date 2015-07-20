@@ -16,6 +16,13 @@ from subprocess import Popen, PIPE
 
 from carto_renderer.errors import BadRequest, JsonKeyError, ServiceError
 
+logging.basicConfig(format=u"%(message)s")
+GEOM_TYPES = {
+    1: 'POINT',
+    2: 'LINE_STRING',
+    3: 'POLYGON'
+}
+
 # Variables for Vector Tiles.
 BASE_ZOOM = 29
 TILE_ZOOM_FACTOR = 16
@@ -57,19 +64,13 @@ class CssRenderer(object):
         return self.renderer.stdout.readline()
 
 
-GEOM_TYPES = {
-    1: 'POINT',
-    2: 'LINE_STRING',
-    3: 'POLYGON'
-}
-
-
 def build_wkt(geom_code, geometries):
     """
     Build a Well Known Text of the appropriate type.
 
     Returns None on failure.
     """
+    logger = logging.getLogger("build_wkt")
     geom_type = GEOM_TYPES.get(geom_code, 'UNKNOWN')
 
     def collapse(coords):
@@ -88,7 +89,7 @@ def build_wkt(geom_code, geometries):
     collapsed = collapse(geometries)
 
     if geom_type == 'UNKNOWN':
-        logging.warn('Unknown geometry code: %s', geom_code)
+        logger.warn(u"Unknown geometry code: %s", geom_code)
         return None
 
     if geom_type != 'POINT':
@@ -104,13 +105,14 @@ def render_png(tile, zoom, xml):
     """
     Render the tile for the given zoom
     """
+    logger = logging.getLogger("render_png")
     ctx = mapnik.Context()
 
     map_tile = mapnik.Map(256, 256)
-    scale_denom = 1 << (BASE_ZOOM - int(zoom or 1))
-    scale_factor = scale_denom / map_tile.scale_denominator()
+    # scale_denom = 1 << (BASE_ZOOM - int(zoom or 1))
+    # scale_factor = scale_denom / map_tile.scale_denominator()
 
-    map_tile.zoom(scale_factor)  # TODO: Is overriden by zoom_to_box.
+    # map_tile.zoom(scale_factor)  # TODO: Is overriden by zoom_to_box.
     mapnik.load_map_from_string(map_tile, xml)
     map_tile.zoom_to_box(mapnik.Box2d(0, 0, 255, 255))
 
@@ -127,7 +129,7 @@ def render_png(tile, zoom, xml):
                 try:
                     feat.add_geometries_from_wkt(wkt)
                 except RuntimeError:
-                    logging.warn("Failed to parse WKT: %s", wkt)
+                    logger.warn(u"Failed to parse WKT: %s", wkt)
             source.add_feature(feat)
 
         map_layer.styles.append(name)
@@ -144,12 +146,31 @@ class BaseHandler(RequestHandler):
     """
     Convert ServiceErrors to HTTP errors.
     """
+    def extract_jbody(self):
+        """
+        Extract the json body from self.request.
+        """
+        content_type = self.request.headers.get('content-type', '')
+        if not content_type.lower().startswith('application/json'):
+            message = "Invalid Content-Type: '{}'; expected 'application/json'"
+            raise BadRequest(message.format(content_type))
+
+        body = self.request.body
+
+        try:
+            jbody = json.loads(body)
+        except StandardError:
+            raise BadRequest("Could not parse JSON.", body)
+        return jbody
+
     def _handle_request_exception(self, err):
         """
         Convert ServiceErrors to HTTP errors.
         """
+        logger = logging.getLogger(self.__class__.__name__)
+
         payload = {}
-        logging.exception(err)
+        logger.exception(err)
         if isinstance(err, ServiceError):
             status_code = err.status_code
             if err.request_body:
@@ -162,7 +183,7 @@ class BaseHandler(RequestHandler):
 
         self.clear()
         self.set_status(status_code)
-        self.write(payload)
+        self.write(json.dumps(payload))
         self.finish()
 
 
@@ -189,7 +210,7 @@ class StyleHandler(BaseHandler):
     """
     def initialize(self, css_renderer):
         # pylint: disable=arguments-differ
-        """Magic Tornado replacement for __init__."""
+        """Magic Tornado replacement for _i_nit__."""
         self.css_renderer = css_renderer
 
     def post(self):
@@ -197,20 +218,7 @@ class StyleHandler(BaseHandler):
         Convert Carto CSS passed in via the `$style` query param
         into Mapnik XML.
         """
-        content_type = self.request.headers['content-type']
-        if not content_type.lower().startswith('application/json'):
-            message = "Invalid Content-Type: '{}'; expected 'application/json'"
-            raise BadRequest(message.format(content_type))
-
-        body = self.request.body
-
-        try:
-            jbody = json.loads(body)
-        except ValueError:
-            jbody = None
-
-        if not jbody:
-            raise BadRequest("Could not parse JSON.", body)
+        jbody = self.extract_jbody()
 
         if 'style' in jbody:
             self.write(self.css_renderer.render_css(jbody['style']))
@@ -226,6 +234,8 @@ class RenderHandler(BaseHandler):
 
     Expects a JSON blob with 'style', 'zoom', and 'bpbf' values.
     """
+    keys = ['bpbf', 'zoom', 'style']
+
     def initialize(self, css_renderer):
         # pylint: disable=arguments-differ
         """Magic Tornado replacement for __init__."""
@@ -237,31 +247,16 @@ class RenderHandler(BaseHandler):
 
         Expects a JSON blob with 'style', 'zoom', and 'bpbf' values.
         """
-        content_type = self.request.headers['content-type']
-        if not content_type.lower().startswith('application/json'):
-            message = "Invalid Content-Type: '{}'; expected 'application/json'"
-            raise BadRequest(message.format(content_type))
+        jbody = self.extract_jbody()
 
-        body = self.request.body
-
-        try:
-            jbody = json.loads(body)
-        except ValueError:
-            jbody = None
-
-        if not jbody:
-            raise BadRequest("Could not parse json.", bad_input=body)
-
-        keys = ['bpbf', 'zoom', 'style']
-
-        if not all([k in jbody for k in keys]):
-            raise JsonKeyError(keys, jbody)
+        if not all([k in jbody for k in self.keys]):
+            raise JsonKeyError(self.keys, jbody)
         else:
             try:
                 zoom = int(jbody['zoom'])
             except:
                 raise BadRequest("'zoom' must be an integer.",
-                                 request_body=body)
+                                 request_body=jbody)
             pbf = base64.b64decode(jbody['bpbf'])
             tile = mapbox_vector_tile.decode(pbf)
             xml = self.css_renderer.render_css(jbody['style'])
@@ -269,7 +264,7 @@ class RenderHandler(BaseHandler):
             self.finish()
 
 
-def main():
+def main():  # pragma: no cover
     """
     Actually fire up the web server.
 
@@ -290,5 +285,5 @@ def main():
     app.listen(4096)
     IOLoop.current().start()
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

@@ -1,6 +1,7 @@
 node_modules
-.foreverignore
 test.png
 test.jpg
 *.pyc
 .hypothesis
+.coverage
+/htmlcov/

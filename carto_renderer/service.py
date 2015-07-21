@@ -16,7 +16,8 @@ from subprocess import Popen, PIPE
 
 from carto_renderer.errors import BadRequest, JsonKeyError, ServiceError
 
-logging.basicConfig(format=u"%(message)s")
+# TODO: Actually configure logging.
+logging.basicConfig(format=u"%(message)s", level='INFO')
 GEOM_TYPES = {
     1: 'POINT',
     2: 'LINE_STRING',
@@ -124,6 +125,7 @@ def render_png(tile, zoom, xml):
 
         for feature in features:
             wkt = build_wkt(feature['type'], feature['geometry'])
+            logger.debug('wkt: %s', wkt)
             feat = mapnik.Feature(ctx, 0)
             if wkt:
                 try:
@@ -283,6 +285,7 @@ def main():  # pragma: no cover
 
     app = Application(routes)
     app.listen(4096)
+    logging.info("Listening on localhost:4096...")
     IOLoop.current().start()
 
 if __name__ == "__main__":  # pragma: no cover

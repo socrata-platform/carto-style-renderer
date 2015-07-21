@@ -1,8 +1,10 @@
 # pylint: disable=missing-docstring,line-too-long,import-error,abstract-method
 import json
 
+from base64 import b64encode
 from hypothesis import assume, given
 from hypothesis.strategies import integers, lists, text
+from mapbox_vector_tile import encode as tile_encode
 from pytest import raises
 from tornado.web import RequestHandler
 
@@ -13,8 +15,9 @@ except ImportError:
 
 try:
     unicode
-except NameError:     # pragma: no cover
-    unicode = str     # pylint: disable=invalid-name,redefined-builtin
+except NameError:               # pragma: no cover
+    # pylint: disable=redefined-builtin,invalid-name
+    unicode = str
 
 from carto_renderer import service, errors
 from carto_renderer.service import CssRenderer, GEOM_TYPES, build_wkt
@@ -71,6 +74,9 @@ class StringHandler(RequestHandler):
     def was_written(self):
         return u''.join([unicode(s) for s in self.written])
 
+    def was_written_b64(self):
+        return u''.join([b64encode(s) for s in self.written])
+
 
 class BaseStrHandler(service.BaseHandler, StringHandler):
     pass
@@ -95,6 +101,13 @@ class StyleStrHandler(service.StyleHandler, StringHandler):
 class RenderStrHandler(service.RenderHandler, StringHandler):
     def __init__(self, renderer=None):
         StringHandler.__init__(self, css_renderer=renderer)
+        self.jbody = None
+
+    def extract_jbody(self):
+        if self.jbody:
+            return self.jbody
+        else:
+            return service.RenderHandler.extract_jbody(self)
 
 
 def test_render_css():
@@ -156,11 +169,8 @@ def test_build_wkt_line_polygon(shells):
     assert wkt == 'POLYGON((({})))'.format('),('.join(point_str))
 
 
-def test_render_png():
-    # patch: mapnik.render and mapnik.Image for testing here.
-    # It's not quite blackbox testing, but should be much simpler than
-    # having to deal with the output.
-    assert "TODO" == True
+def test_render_bad_wkt():
+    pass
 
 
 @given(text(), integers(), text())
@@ -275,3 +285,27 @@ def test_style_handler(jbody, xml):
 
     assert xml == style.was_written()
     assert style.finished
+
+
+def test_render_handler():
+    """
+    This is a simple regression test, it only hits one case.
+    """
+    handler = RenderStrHandler(renderer=CssRenderer())
+    css = '#main{marker-line-color:#00C;marker-width:1}'
+    layer = {
+        "name": "main",
+        "features": [
+            {
+                "geometry": "POINT(50 50)",
+                "properties": {}
+            }
+        ]
+    }
+    tile = b64encode(tile_encode([layer]))
+    handler.jbody = {'zoom': 14, 'style': css, 'bpbf': tile}
+    handler.post()
+    # pylint: disable=line-too-long
+    expected = """iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAABOklEQVR4nO3VsQ2AMAxFwYTsv1kYgkkcECMg8YvcSe5fY7s1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvqmRLgAiZr1TR7oE+N2z/Od1H4CeLgEifH8A2MIC2WYLFCJC8r4AAAAASUVORK5CYII="""
+    assert handler.finished
+    assert handler.was_written_b64() == expected

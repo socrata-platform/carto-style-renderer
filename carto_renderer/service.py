@@ -128,10 +128,7 @@ def render_png(tile, zoom, xml):
             logger.debug('wkt: %s', wkt)
             feat = mapnik.Feature(ctx, 0)
             if wkt:
-                try:
-                    feat.add_geometries_from_wkt(wkt)
-                except RuntimeError:
-                    logger.warn(u"Failed to parse WKT: %s", wkt)
+                feat.add_geometries_from_wkt(wkt)
             source.add_feature(feat)
 
         map_layer.styles.append(name)

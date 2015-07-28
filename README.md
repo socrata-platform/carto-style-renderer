@@ -20,11 +20,11 @@ PYTHONPATH=. carto_renderer/service.py
 ```
 
 ## Testing ##
-The tests are run using py.test
+The tests are run using py.test and hypothesis
 
-You can install it by running:
+You can install them by running:
 ```
-pip install pytest
+pip install pytest hypothesis
 ```
 
 Run tests from the root directory:

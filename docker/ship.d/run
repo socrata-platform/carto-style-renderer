@@ -1,4 +1,4 @@
 #!/bin/bash
 set -ev
 
-exec su socrata -c 'python service.py'
+exec su socrata -c 'PYTHONPATH=. python carto_renderer/service.py'

@@ -5,6 +5,7 @@ ENV http_proxy http://proxy.aws-us-west-2-infrastructure.socrata.net:3128
 ENV https_proxy http://proxy.aws-us-west-2-infrastructure.socrata.net:3128
 
 RUN apt-get update
+RUN apt-get install python-mapnik2
 
 ADD requirements.txt /app/
 RUN pip install -r /app/requirements.txt

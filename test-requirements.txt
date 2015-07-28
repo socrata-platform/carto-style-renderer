@@ -1,0 +1,2 @@
+pytest==2.7.2
+hypothesis==1.8.0

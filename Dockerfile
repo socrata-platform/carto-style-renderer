@@ -20,11 +20,12 @@ RUN pip install -r /app/requirements.txt
 # Node hacks.
 RUN ln -s /usr/bin/nodejs /usr/bin/node
 RUN git config --global url."https://".insteadOf git://
-RUN npm install carto
+ADD package.json /app/
+WORKDIR /app
+RUN npm install
 
 COPY ship.d /etc/ship.d/
 
-WORKDIR /app
 RUN mkdir -p /app/carto_renderer
 ADD carto_renderer /app/carto_renderer
 ADD style.js /app/

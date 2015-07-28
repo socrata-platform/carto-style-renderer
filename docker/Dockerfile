@@ -6,8 +6,8 @@ ENV https_proxy http://proxy.aws-us-west-2-infrastructure.socrata.net:3128
 
 RUN apt-get update
 
-ADD requirements.txt
-RUN pip install -r requirements.txt
+ADD requirements.txt /app/
+RUN pip install -r /app/requirements.txt
 
 COPY ship.d /etc/ship.d/
 WORKDIR /app

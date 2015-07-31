@@ -14,8 +14,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y update && \
 
 
 
-ADD requirements.txt /app/
-RUN pip install -r /app/requirements.txt
+ADD frozen.txt /app/
+RUN pip install -r /app/frozen.txt
 
 # Node hacks.
 RUN ln -s /usr/bin/nodejs /usr/bin/node

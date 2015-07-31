@@ -1,6 +1,0 @@
-pytest
-hypothesis
-tornado
-mapbox-vector-tile
-# mapbox 2.2.0 will also need to be installed however,
-# installing it via pip is challenging to say the least.

@@ -7,17 +7,20 @@ import mapbox_vector_tile
 from tornado.ioloop import IOLoop
 from tornado.web import Application, RedirectHandler, RequestHandler, url
 
+import argparse
 import json
 import logging
 import collections
 import base64
+import logging.config
 
 from subprocess import Popen, PIPE
 
 from carto_renderer.errors import BadRequest, JsonKeyError, ServiceError
+from carto_renderer.version import SEMANTIC
 
-# TODO: Actually configure logging.
-logging.basicConfig(format=u"%(message)s", level='INFO')
+__package__ = 'carto_renderer'  # pylint: disable=redefined-builtin
+
 GEOM_TYPES = {
     1: 'POINT',
     2: 'LINE_STRING',
@@ -27,6 +30,7 @@ GEOM_TYPES = {
 # Variables for Vector Tiles.
 BASE_ZOOM = 29
 TILE_ZOOM_FACTOR = 16
+LOG_ENV = {'X-Socrata-RequestId': None}
 
 
 class CssRenderer(object):
@@ -71,7 +75,7 @@ def build_wkt(geom_code, geometries):
 
     Returns None on failure.
     """
-    logger = logging.getLogger("build_wkt")
+    logger = logging.getLogger(__package__)
     geom_type = GEOM_TYPES.get(geom_code, 'UNKNOWN')
 
     def collapse(coords):
@@ -90,7 +94,7 @@ def build_wkt(geom_code, geometries):
     collapsed = collapse(geometries)
 
     if geom_type == 'UNKNOWN':
-        logger.warn(u"Unknown geometry code: %s", geom_code)
+        logger.warn(u"Unknown geometry code: %s", geom_code, extra=LOG_ENV)
         return None
 
     if geom_type != 'POINT':
@@ -106,7 +110,7 @@ def render_png(tile, zoom, xml):
     """
     Render the tile for the given zoom
     """
-    logger = logging.getLogger("render_png")
+    logger = logging.getLogger(__package__)
     ctx = mapnik.Context()
 
     map_tile = mapnik.Map(256, 256)
@@ -125,7 +129,7 @@ def render_png(tile, zoom, xml):
 
         for feature in features:
             wkt = build_wkt(feature['type'], feature['geometry'])
-            logger.debug('wkt: %s', wkt)
+            logger.debug('wkt: %s', wkt, extra=LOG_ENV)
             feat = mapnik.Feature(ctx, 0)
             if wkt:
                 feat.add_geometries_from_wkt(wkt)
@@ -166,10 +170,11 @@ class BaseHandler(RequestHandler):
         """
         Convert ServiceErrors to HTTP errors.
         """
-        logger = logging.getLogger(self.__class__.__name__)
+        logger = logging.getLogger("{}.{}".format(__package__,
+                                                  self.__class__.__name__))
 
         payload = {}
-        logger.exception(err)
+        logger.exception(err, extra=LOG_ENV)
         if isinstance(err, ServiceError):
             status_code = err.status_code
             if err.request_body:
@@ -191,12 +196,15 @@ class VersionHandler(BaseHandler):
     """
     Return the version of the service, currently hardcoded.
     """
-    version = {'health': 'alive', 'version': '0.0.1'}
+    version = {'health': 'alive', 'version': SEMANTIC}
 
     def get(self):
         """
         Return the version of the service, currently hardcoded.
         """
+        logger = logging.getLogger('{}.{}'.format(__package__,
+                                                  self.__class__.__name__))
+        logger.info('Alive!')
         self.write(VersionHandler.version)
         self.finish()
 
@@ -269,6 +277,15 @@ def main():  # pragma: no cover
 
     Listens on 4096.
     """
+    parser = argparse.ArgumentParser(
+        description="A rendering service for vector tiles using Mapnik.")
+    parser.add_argument('--log-config-file',
+                        dest='log_config_file',
+                        default='logging.ini',
+                        help='Config file for `logging.config`')
+    args = parser.parse_args()
+    logging.config.fileConfig(args.log_config_file)
+
     handler_opts = {
         'css_renderer': CssRenderer()
     }
@@ -282,7 +299,8 @@ def main():  # pragma: no cover
 
     app = Application(routes)
     app.listen(4096)
-    logging.info("Listening on localhost:4096...")
+    logger = logging.getLogger(__package__)
+    logger.info("Listening on localhost:4096...", extra=LOG_ENV)
     IOLoop.current().start()
 
 if __name__ == "__main__":  # pragma: no cover

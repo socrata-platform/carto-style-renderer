@@ -5,3 +5,7 @@ test.jpg
 .hypothesis
 .coverage
 /htmlcov/
+.Python
+bin/
+include/
+lib/

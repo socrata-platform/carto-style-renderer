@@ -1,8 +1,6 @@
 FROM socrata/python
 
-# ENV ftp_proxy http://proxy.aws-us-west-2-infrastructure.socrata.net:3128
-# ENV http_proxy http://proxy.aws-us-west-2-infrastructure.socrata.net:3128
-# ENV https_proxy http://proxy.aws-us-west-2-infrastructure.socrata.net:3128
+EXPOSE 4096
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install \
@@ -12,10 +10,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y update && \
                                    nodejs \
                                    npm
 
-
-
-ADD frozen.txt /app/
-RUN pip install -r /app/frozen.txt
+RUN mkdir -p /app/carto_renderer
 
 # Node hacks.
 RUN ln -s /usr/bin/nodejs /usr/bin/node
@@ -24,10 +19,11 @@ ADD package.json /app/
 WORKDIR /app
 RUN npm install
 
-COPY ship.d /etc/ship.d/
+ADD frozen.txt /app/
+RUN pip install -r /app/frozen.txt
 
-RUN mkdir -p /app/carto_renderer
+COPY ship.d /etc/ship.d/
 ADD carto_renderer /app/carto_renderer
 ADD style.js /app/
 
-EXPOSE 4096
+

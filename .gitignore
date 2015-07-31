@@ -5,3 +5,4 @@ test.jpg
 .hypothesis
 .coverage
 /htmlcov/
+frozen.txt

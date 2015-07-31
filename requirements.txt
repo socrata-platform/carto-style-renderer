@@ -1,2 +1,2 @@
-tornado==4.2
-mapbox-vector-tile==0.0.10
+tornado
+mapbox-vector-tile

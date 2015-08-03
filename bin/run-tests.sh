@@ -2,6 +2,9 @@
 
 set -ev
 
+# Change to the project root.
+cd "$(git rev-parse --show-toplevel 2>/dev/null)"
+
 if [ ! -d "venv" ]; then
     virtualenv venv
 fi

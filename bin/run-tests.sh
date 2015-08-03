@@ -17,7 +17,7 @@ fi
 
 pip install --upgrade pytest
 pip install --upgrade --requirement "requirements.txt"
-# pip install --upgrade --requirement "test-requirements.txt"
+pip install --upgrade --requirement "test-requirements.txt"
 
 npm install
 

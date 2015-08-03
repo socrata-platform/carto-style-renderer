@@ -6,3 +6,5 @@ test.jpg
 .coverage
 /htmlcov/
 frozen.txt
+.Python
+venv/

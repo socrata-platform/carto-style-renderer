@@ -1,2 +1,2 @@
-tornado
 mapbox-vector-tile
+tornado

@@ -153,6 +153,9 @@ class BaseHandler(RequestHandler):
         """
         Extract the json body from self.request.
         """
+        request_id = self.request.headers.get('x-socrata-requestid', '')
+        LOG_ENV['X-Socrata-RequestId'] = request_id
+
         content_type = self.request.headers.get('content-type', '')
         if not content_type.lower().startswith('application/json'):
             message = "Invalid Content-Type: '{}'; expected 'application/json'"

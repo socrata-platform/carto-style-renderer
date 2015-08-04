@@ -207,7 +207,7 @@ class VersionHandler(BaseHandler):
         """
         logger = logging.getLogger('{}.{}'.format(__package__,
                                                   self.__class__.__name__))
-        logger.info('Alive!')
+        logger.info('Alive!', extra=LOG_ENV)
         self.write(VersionHandler.version)
         self.finish()
 

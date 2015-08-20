@@ -220,7 +220,7 @@ class StyleHandler(BaseHandler):
     """
     def initialize(self, css_renderer):
         # pylint: disable=arguments-differ
-        """Magic Tornado replacement for _i_nit__."""
+        """Magic Tornado replacement for __init__."""
         self.css_renderer = css_renderer
 
     def post(self):

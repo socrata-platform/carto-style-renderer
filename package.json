@@ -1,6 +1,6 @@
 {
   "name": "carto-style-renderer",
-  "version": "0.0.1",
+  "version": "0.0.1-SNAPSHOT",
   "private": true,
   "dependencies": {
     "carto": "^0.14.1"

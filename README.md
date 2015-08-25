@@ -2,7 +2,7 @@
 This service renders Carto CSS to Mapnik XML.
 
 ```
-curl localhost:4097/style -H 'Content-type: application/json' -d @carto_renderer/examples/main.json
+curl localhost:4097/style -H 'Content-type: text/plain" -d @examples/main.mss
 ```
 
 ## Start the Service ##

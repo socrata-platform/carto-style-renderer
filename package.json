@@ -4,5 +4,14 @@
   "private": true,
   "dependencies": {
     "carto": "^0.14.1"
+  },
+
+  "eslintConfig": {
+    "env": {
+      "node": true
+    },
+    "rules": {
+      "quotes": [1, "single"]
+    }
   }
 }

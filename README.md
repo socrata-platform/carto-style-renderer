@@ -1,33 +1,12 @@
-# Carto Test Service #
-This is a service that's a proof of concept for getting a service that
-renders vector tiles into images using CartoCSS.
+# Carto Style Renderer #
+This service renders Carto CSS to Mapnik XML.
 
-You can exercise it with the following curl commands.
-
-Transform CartoCSS to MapnikXML.
 ```
-curl localhost:4096/style -H 'Content-type: application/json' -d @carto_renderer/examples/main.json
+curl localhost:4097/style -H 'Content-type: application/json' -d @carto_renderer/examples/main.json
 ```
 
-Render an image to `test.png`:
-```
-curl -o test.png localhost:4096/render -H 'Content-type: application/json' -d @carto_renderer/examples/main.json
-```
-
-## Start the Service (dev server) ##
-```
-PYTHONPATH=. carto_renderer/service.py
-```
+## Start the Service ##
+TODO
 
 ## Testing ##
-The tests are run using py.test and hypothesis
-
-You can install them by running:
-```
-pip install pytest hypothesis
-```
-
-Run tests from the root directory:
-```
-PYTHONPATH=. py.test
-```
+TODO

@@ -3,15 +3,19 @@
   "version": "0.0.1-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "carto": "^0.14.1"
+    "body-parser": "^1.13.3",
+    "carto": "^0.14.1",
+    "express": "^4.13.3"
   },
-
   "eslintConfig": {
     "env": {
       "node": true
     },
     "rules": {
-      "quotes": [1, "single"]
+      "quotes": [
+        1,
+        "single"
+      ]
     }
   }
 }

@@ -36,16 +36,22 @@ function CartoMML(styleData) {
   this.xml = renderer.render(this).toString() + '\n';
 }
 
-function version(req, res) {
+function version(builder) {
   fs.readFile('package.json', 'utf8', function(err, data) {
     var ver = (err) ? 'UNKNOWN' : JSON.parse(data).version;
     var payload = {health: 'alive', version: ver};
-    res.status(200);
-    res.send(payload);
+
+    builder(payload);
   });
 }
 
-app.get('/version', version);
+app.get('/version', function(req, res) {
+  version(function(payload) {
+    res.status(200);
+    res.send(payload);
+  });
+});
+
 app.post('/style', function(req, res) {
   res.status(200);
   res.send(new CartoMML(req.body).xml);

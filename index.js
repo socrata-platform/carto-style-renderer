@@ -43,6 +43,10 @@ function CartoMML(styleData) {
   this.xml = renderer.render(this).toString() + '\n';
 }
 
+function style(cartoCss) {
+  return new CartoMML(cartoCss).xml;
+}
+
 var version = (function() {
   var ver;
 
@@ -86,8 +90,14 @@ app.get('/version', log(function(req, res) {
 
 app.post('/style', log(function(req, res) {
   res.status(200);
-  res.send(new CartoMML(req.body).xml);
+  res.send(style(req.body));
 }));
 
-app.listen(PORT);
-baseLogger.info('Server running on localhost: ' + PORT);
+if (require.main === module) {
+  app.listen(PORT);
+  baseLogger.info('Server running on localhost: ' + PORT);
+} else {
+  module.exports = {
+    'style': style
+  };
+}

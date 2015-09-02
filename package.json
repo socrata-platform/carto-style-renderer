@@ -12,9 +12,6 @@
     "env": {
       "node": true
     },
-    "globals": {
-      "crypto": false
-    },
     "rules": {
       "quotes": [
         1,

@@ -6,6 +6,7 @@ var PORT = 4097;
 var bunyan = require('bunyan');
 var bodyParser = require('body-parser');
 var carto = require('carto');
+var crypto = require('crypto');
 var express = require('express');
 var fs = require('fs');
 

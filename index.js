@@ -47,7 +47,6 @@ var version = (function() {
 
   try {
     var data = fs.readFileSync('package.json', 'utf8');
-    baseLogger.info("HERE!");
     ver = JSON.parse(data).version;
   } catch (e) {
     ver = 'UNKNOWN';
@@ -68,10 +67,11 @@ function log(handler) {
     var delta = end - start;
 
     var logger = baseLogger.child({
-      responseTime: delta
+      responseTime: delta,
+      'X-Socrata-RequestId': req.get('X-Socrata-RequestId')
     });
 
-    // logger.info('Success!');
+    logger.info('Success!');
   };
 }
 

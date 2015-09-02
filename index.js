@@ -3,14 +3,20 @@
 
 var PORT = 4097;
 
+var bunyan = require('bunyan');
 var bodyParser = require('body-parser');
 var carto = require('carto');
 var express = require('express');
 var fs = require('fs');
 
+var baseLogger = bunyan.createLogger({
+  name: 'carto-style-renderer'
+});
+
 /*eslint-disable no-unused-vars */
 function errorHandler(err, req, res, next) {
   res.status(500);
+  baseLogger.warn(err);
   res.render('error', { error: err });
 }
 /*eslint-enable */
@@ -36,26 +42,48 @@ function CartoMML(styleData) {
   this.xml = renderer.render(this).toString() + '\n';
 }
 
-function version(builder) {
-  fs.readFile('package.json', 'utf8', function(err, data) {
-    var ver = (err) ? 'UNKNOWN' : JSON.parse(data).version;
-    var payload = {health: 'alive', version: ver};
+var version = (function() {
+  var ver;
 
-    builder(payload);
-  });
+  try {
+    var data = fs.readFileSync('package.json', 'utf8');
+    baseLogger.info("HERE!");
+    ver = JSON.parse(data).version;
+  } catch (e) {
+    ver = 'UNKNOWN';
+  }
+
+  return function() {
+    return {health: 'alive', version: ver};
+  };
+})();
+
+function log(handler) {
+  return function(req, res) {
+    var start = new Date().getTime();
+
+    handler(req, res);
+
+    var end = new Date().getTime();
+    var delta = end - start;
+
+    var logger = baseLogger.child({
+      responseTime: delta
+    });
+
+    // logger.info('Success!');
+  };
 }
 
-app.get('/version', function(req, res) {
-  version(function(payload) {
-    res.status(200);
-    res.send(payload);
-  });
-});
+app.get('/version', log(function(req, res) {
+  res.status(200);
+  res.send(version());
+}));
 
-app.post('/style', function(req, res) {
+app.post('/style', log(function(req, res) {
   res.status(200);
   res.send(new CartoMML(req.body).xml);
-});
+}));
 
 app.listen(PORT);
-console.log('Server running on localhost: ' + PORT);
+baseLogger.info('Server running on localhost: ' + PORT);

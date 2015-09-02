@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "body-parser": "^1.13.3",
+    "bunyan": "^1.4.0",
     "carto": "^0.14.1",
     "express": "^4.13.3"
   },

@@ -66,9 +66,12 @@ function log(handler) {
     var end = new Date().getTime();
     var delta = end - start;
 
+    var reqId = req.header('X-Socrata-RequestId') ||
+          crypto.randomBytes(16).toString('base64');
+
     var logger = baseLogger.child({
       responseTime: delta,
-      'X-Socrata-RequestId': req.get('X-Socrata-RequestId')
+      'X-Socrata-RequestId': reqId
     });
 
     logger.info('Success!');

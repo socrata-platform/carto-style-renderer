@@ -1,8 +1,27 @@
 {
   "name": "carto-style-renderer",
-  "version": "0.0.1",
+  "version": "0.0.1-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "carto": "^0.14.1"
+    "body-parser": "^1.13.3",
+    "bunyan": "^1.4.0",
+    "carto": "^0.14.1",
+    "express": "^4.13.3"
+  },
+  "devDependencies": {
+    "chai": "*",
+    "mocha": "*"
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true,
+      "mocha": true
+    },
+    "rules": {
+      "quotes": [
+        1,
+        "single"
+      ]
+    }
   }
 }

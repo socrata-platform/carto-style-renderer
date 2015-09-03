@@ -1,8 +1,10 @@
 FROM socrata/nodejs
 
 ADD package.json /app/
+COPY ship.d /etc/ship.d/
 WORKDIR /app
+
 RUN npm install --production
 
-COPY ship.d /etc/ship.d/
 ADD index.js /app/
+RUN date -u +"%Y-%m-%dT%H:%M:%SZ" > build-time.txt

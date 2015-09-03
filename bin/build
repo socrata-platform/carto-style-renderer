@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cp index.js package.json docker/
+docker build -t carto-style-renderer docker

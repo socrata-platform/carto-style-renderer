@@ -26,6 +26,11 @@ var app = express();
 app.use(bodyParser.text());
 app.use(errorHandler);
 
+/**
+ * Wrap `styledata` in an object suitable for rendering, and render it
+ * to xml.
+ * @constructor
+ */
 function CartoMML(styleData) {
   var renderer = new carto.Renderer();
 
@@ -43,12 +48,15 @@ function CartoMML(styleData) {
   this.xml = renderer.render(this).toString() + '\n';
 }
 
+/** Convert Carto CSS to Mapnik XML. */
 function style(cartoCss) {
   return new CartoMML(cartoCss).xml;
 }
 
+/** Return a JSON blob containing the version. */
 var version = (function() {
   var ver;
+  var buildTime;
 
   try {
     var data = fs.readFileSync('package.json', 'utf8');
@@ -57,8 +65,18 @@ var version = (function() {
     ver = 'UNKNOWN';
   }
 
+  try {
+    buildTime = fs.readFileSync('build-time.txt', 'utf8');
+  } catch (e) {
+    buildTime = 'UNKNOWN';
+  }
+
   return function() {
-    return {health: 'alive', version: ver};
+    return {health: 'alive',
+            version: ver,
+            nodejsVersion: process.version,
+            buildTime: buildTime
+           };
   };
 })();
 

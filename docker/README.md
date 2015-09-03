@@ -3,7 +3,7 @@
 ## Building ##
 To build the image, run:
 ```
-cp ../index.js ../package.json
+cp ../index.js ../package.json .
 docker build -t carto-style-renderer .
 ```
  

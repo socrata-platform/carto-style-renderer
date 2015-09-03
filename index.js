@@ -80,6 +80,7 @@ var version = (function() {
   };
 })();
 
+/** Wrapper around a handler, adds logging including response time. */
 function log(handler) {
   return function(req, res) {
     var start = new Date().getTime();

@@ -66,7 +66,7 @@ var version = (function() {
   }
 
   try {
-    buildTime = fs.readFileSync('build-time.txt', 'utf8');
+    buildTime = fs.readFileSync('build-time.txt', 'utf8').trim();
   } catch (e) {
     buildTime = 'UNKNOWN';
   }

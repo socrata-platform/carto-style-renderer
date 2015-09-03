@@ -1,7 +1,5 @@
 FROM socrata/nodejs
 
-EXPOSE 4096
-
 ADD package.json /app/
 WORKDIR /app
 RUN npm install --production

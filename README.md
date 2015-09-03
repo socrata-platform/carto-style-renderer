@@ -19,3 +19,6 @@ mocha
 ```
 curl localhost:4097/style -H 'Content-type: text/plain' -d @examples/main.mss
 ```
+
+## Building ##
+See [docker/README.md](./docker/README.md).

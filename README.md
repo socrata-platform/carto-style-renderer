@@ -17,7 +17,7 @@ mocha
 
 ## Example Request ##
 ```
-curl localhost:4097/style -H 'Content-type: text/plain' -d @examples/main.mss
+curl localhost:4097/style?style=@examples/main.mss
 ```
 
 ## Building ##

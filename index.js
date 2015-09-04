@@ -107,9 +107,9 @@ app.get('/version', log(function(req, res) {
   res.send(version());
 }));
 
-app.post('/style', log(function(req, res) {
+app.get('/style', log(function(req, res) {
   res.status(200);
-  res.send(style(req.body));
+  res.send(style(req.query.style));
 }));
 
 if (require.main === module) {

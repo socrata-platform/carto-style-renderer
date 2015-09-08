@@ -3,8 +3,8 @@
 
 var PORT = 4097;
 
-var bunyan = require('bunyan');
 var bodyParser = require('body-parser');
+var bunyan = require('bunyan');
 var carto = require('carto');
 var crypto = require('crypto');
 var express = require('express');

@@ -97,9 +97,7 @@ mocha.run(function (failures) {
         properties: {
           doPush: {
             description: 'Push changes to the remote repository (y/n)? '
-              + '[y]:',
-            pattern: /[YyNn]/,
-            type: 'boolean'
+              + '[y]:'
           }
         }
       }, function(pErr, pResult) {
@@ -107,7 +105,7 @@ mocha.run(function (failures) {
           throw pErr;
         }
 
-        if (pResult.doPush) {
+        if (pResult.doPush.toLowerCase() === 'y') {
           console.log(childProcess.execSync('git push').toString());
         }
       });

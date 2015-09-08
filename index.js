@@ -109,6 +109,7 @@ app.get('/version', log(function(req, res) {
 
 app.get('/style', log(function(req, res) {
   res.status(200);
+  res.set('Content-Type', 'text/xml');
   res.send(style(req.query.style));
 }));
 

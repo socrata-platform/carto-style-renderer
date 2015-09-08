@@ -31,8 +31,4 @@ describe('style()', function() {
     expect(collapse(style(oneline))).to.equal(expected);
     expect(collapse(style(multiline))).to.equal(expected);
   });
-
-  it('broken', function() {
-    expect('war').to.equal('peace');
-  });
 });

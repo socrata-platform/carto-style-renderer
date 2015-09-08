@@ -9,6 +9,8 @@ var packageInfo = require('../package.json');
 var path = require('path');
 var prompt = require('prompt');
 
+jsonfile.spaces = 2;
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';

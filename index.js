@@ -34,25 +34,11 @@ app.use(errorHandler);
 function CartoMML(styleData) {
   var renderer = new carto.Renderer();
 
-  this.Layer = [];
-
-  var layers = styleData.match(/#([A-Za-z0-9]+)\s*[{]/g).map(
+  this.Layer = styleData.match(/#([A-Za-z0-9]+)\s*[{]/g).map(
     function(m) {
-      return m.replace('#', '').replace(/\s*{$/, '');
+      var name = m.replace('#', '').replace(/\s*{$/, '');
+      return { 'name': name };
     });
-
-  var self = this;
-  layers.forEach(function(name) {
-    var layer = {};
-    layer.name = name;
-    layer.id = name;
-    layer.geometry = 'point';
-    layer['srs-name'] = '900913';
-    layer.advanced = {};
-    layer.class = '';
-
-    self.Layer.push(layer);
-  });
 
   this.Stylesheet = [ { data: styleData } ];
 

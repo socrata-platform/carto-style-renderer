@@ -34,11 +34,14 @@ app.use(errorHandler);
 function CartoMML(styleData) {
   var renderer = new carto.Renderer();
 
-  this.Layer = styleData.match(/#([A-Za-z0-9]+)\s*[{]/g).map(
-    function(m) {
-      var name = m.replace('#', '').replace(/\s*{$/, '');
-      return { 'name': name };
-    });
+  var matches = styleData.match(/#([A-Za-z0-9#]+,?\s*)+[{]/g);
+  var split = matches.map(function(m) { return m.split(','); });
+  var merged = [].concat.apply([], split);
+
+  this.Layer = merged.map(function(m) {
+    var name = m.replace('#', '').replace(/\s*{$/, '');
+    return { 'name': name };
+  });
 
   this.Stylesheet = [ { data: styleData } ];
 

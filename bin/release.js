@@ -108,8 +108,10 @@ mocha.run(function (failures) {
         }
 
         if (pResult.doPush.toLowerCase() === 'y') {
-          console.log(childProcess.execSync('git push').toString());
-          console.log(childProcess.execSync('git push --tags').toString());
+          console.log('pushing changes...');
+          childProcess.execSync('git push');
+          childProcess.execSync('git push --tags');
+          console.log('Done.');
         }
       });
     });

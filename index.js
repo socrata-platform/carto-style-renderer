@@ -39,7 +39,7 @@ function CartoMML(styleData) {
   var merged = [].concat.apply([], split);
 
   this.Layer = merged.map(function(m) {
-    var name = m.replace('#', '').replace(/\s*{$/, '');
+    var name = m.replace('#', '').replace(/\s*{$/, '').trim();
     return { 'name': name };
   });
 

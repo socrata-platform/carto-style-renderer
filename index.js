@@ -23,7 +23,7 @@ function errorHandler(err, req, res, next) {
 /*eslint-enable */
 
 var app = express();
-// app.use(bodyParser.text());
+app.use(bodyParser.text());
 app.use(bodyParser.urlencoded({
   extended: true,
   limit: '10mb'
@@ -106,6 +106,10 @@ function log(handler) {
   };
 }
 
+function unpack(style) {
+  return (new Buffer(style, 'base64')).toString('utf8');
+}
+
 app.get('/version', log(function(req, res) {
   res.status(200);
   res.send(version());
@@ -114,15 +118,13 @@ app.get('/version', log(function(req, res) {
 app.get('/style', log(function(req, res) {
   res.status(200);
   res.set('Content-Type', 'text/xml');
-  var buf = new Buffer(req.query.style, 'base64');
-  res.send(style(buf.toString('utf8')));
+  res.send(style(unpack(req.query.style)));
 }));
 
 app.post('/style', log(function(req, res) {
   res.status(200);
   res.set('Content-Type', 'text/xml');
-  var buf = new Buffer(req.body.style, 'base64');
-  res.send(style(buf.toString('utf8')));
+  res.send(style(unpack(req.body.style)));
 }));
 
 if (require.main === module) {

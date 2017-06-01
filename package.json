@@ -8,12 +8,6 @@
     "carto": "^0.14.1",
     "express": "^4.13.3"
   },
-  "devDependencies": {
-    "chai": "*",
-    "mocha": "*",
-    "jsonfile": "*",
-    "prompt": "*"
-  },
   "eslintConfig": {
     "env": {
       "node": true,
@@ -25,5 +19,11 @@
         "single"
       ]
     }
+  },
+  "devDependencies": {
+    "chai": "^4.0.1",
+    "jsonfile": "^3.0.0",
+    "mocha": "^3.4.2",
+    "prompt": "^1.0.0"
   }
 }

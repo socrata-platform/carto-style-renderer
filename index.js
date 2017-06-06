@@ -24,6 +24,10 @@ function errorHandler(err, req, res, next) {
 
 var app = express();
 app.use(bodyParser.text());
+app.use(bodyParser.urlencoded({
+  extended: true,
+  limit: '10mb'
+}));
 app.use(errorHandler);
 
 /**
@@ -102,6 +106,10 @@ function log(handler) {
   };
 }
 
+function unpack(style) {
+  return (new Buffer(style, 'base64')).toString('utf8');
+}
+
 app.get('/version', log(function(req, res) {
   res.status(200);
   res.send(version());
@@ -110,7 +118,13 @@ app.get('/version', log(function(req, res) {
 app.get('/style', log(function(req, res) {
   res.status(200);
   res.set('Content-Type', 'text/xml');
-  res.send(style(req.query.style));
+  res.send(style(unpack(req.query.style)));
+}));
+
+app.post('/style', log(function(req, res) {
+  res.status(200);
+  res.set('Content-Type', 'text/xml');
+  res.send(style(unpack(req.body.style)));
 }));
 
 if (require.main === module) {

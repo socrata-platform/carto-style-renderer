@@ -1,4 +1,4 @@
-FROM socrata/nodejs
+FROM socrata/nodejs-bionic
 
 ADD package.json /app/
 COPY ship.d /etc/ship.d/

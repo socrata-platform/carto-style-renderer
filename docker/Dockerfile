@@ -1,4 +1,4 @@
-FROM socrata/runit-nodejs-bionic-10x
+FROM socrata/runit-nodejs-bionic:14x
 
 ADD package.json /app/
 COPY runit /etc/service/carto-style-renderer

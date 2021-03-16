@@ -1,7 +1,7 @@
-FROM socrata/nodejs-bionic
+FROM socrata/runit-nodejs-bionic-10x
 
 ADD package.json /app/
-COPY ship.d /etc/ship.d/
+COPY runit /etc/service/carto-style-renderer
 WORKDIR /app
 
 RUN npm install --production

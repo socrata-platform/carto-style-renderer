@@ -15,10 +15,5 @@ Run the tests:
 mocha
 ```
 
-## Example Request ##
-```
-curl localhost:4097/style?style=@examples/main.mss.enc
-```
-
 ## Building ##
 See [docker/README.md](./docker/README.md).

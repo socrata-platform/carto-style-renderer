@@ -43,7 +43,7 @@ function CartoMML(styleData) {
     return { 'name': name };
   });
 
-  this.Stylesheet = [ { data: styleData } ];
+  this.Stylesheet = [ { id: 'stylesheet', data: styleData } ];
 
   this.xml = renderer.render(this).toString() + '\n';
 }

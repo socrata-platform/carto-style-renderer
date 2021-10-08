@@ -15,7 +15,6 @@ function collapse(xml) {
 describe('style()', function() {
   it('rendering CSS returns expected', function() {
     var expected = '<?xml version="1.0" encoding="utf-8"?>'
-        + '<?xml version="1.0" encoding="utf-8"?>'
         + '<!DOCTYPE Map[]>'
         + '<Map>'
         + '<Style filter-mode="first" name="main">'

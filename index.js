@@ -40,7 +40,7 @@ function CartoMML(styleData) {
 
   this.Layer = merged.map(function(m) {
     var name = m.replace('#', '').replace(/\s*{$/, '').trim();
-    return { 'name': name };
+    return { 'id': name, 'name': name };
   });
 
   this.Stylesheet = [ { id: 'stylesheet', data: styleData } ];

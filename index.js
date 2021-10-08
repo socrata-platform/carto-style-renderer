@@ -40,12 +40,12 @@ function CartoMML(styleData) {
 
   this.Layer = merged.map(function(m) {
     var name = m.replace('#', '').replace(/\s*{$/, '').trim();
-    return { 'name': name };
+    return { 'id': name };
   });
 
   this.Stylesheet = [ { id: 'stylesheet', data: styleData } ];
 
-  this.xml = renderer.render(this).toString() + '\n';
+  this.xml = renderer.render(this).data.toString() + '\n';
 }
 
 /** Convert Carto CSS to Mapnik XML. */

@@ -12,7 +12,16 @@ This depends on mocha: `npm install -g mocha`
 
 Run the tests:
 ```
-mocha
+npx mocha
+```
+
+## Example Request ##
+
+This is appending the contents of examples/main.mss.enc as the query parameter. The contents of the query parameter is always a URI-encoded stylesheet.
+
+```
+cd carto-style-renderer
+curl "localhost:4097/style?style=$(cat examples/main.mss.enc)"
 ```
 
 ## Building ##

@@ -15,18 +15,18 @@ function collapse(xml) {
 describe('style()', function() {
   it('rendering CSS returns expected', function() {
     var expected = '<?xml version="1.0" encoding="utf-8"?>'
-          + '<!DOCTYPE Map[]>'
-          + '<Map>'
-          + '<Style filter-mode="first" name="main">'
-          + '<Rule>'
-          + '<MarkersSymbolizer fill="#000066" stroke="#000099" stroke-width="1" width="3" />'
-          + '<PolygonSymbolizer fill="#990000" />'
-          + '</Rule>'
-          + '</Style>'
-          + '<Layer name="main">'
-          + '<StyleName><![CDATA[main]]></StyleName>'
-          + '</Layer>'
-          + '</Map>';
+        + '<?xml version="1.0" encoding="utf-8"?>'
+        + '<!DOCTYPE Map[]>'
+        + '<Map>'
+        + '<Style filter-mode="first" name="main">'
+        + '<Rule>'
+        + '<MarkersSymbolizer stroke="#0000cc" width="1" />'
+        + '</Rule>'
+        + '</Style>'
+        + '<Layer name="main">'
+        + '<StyleName><![CDATA[main]]></StyleName>'
+        + '</Layer>'
+        + '</Map>';
 
     var oneline = '#main{marker-line-color:#00C;marker-width:1}';
     var multiline = [

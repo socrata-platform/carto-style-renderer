@@ -45,7 +45,7 @@ function CartoMML(styleData) {
 
   this.Stylesheet = [ { id: 'stylesheet', data: styleData } ];
 
-  this.xml = renderer.render(this).toString() + '\n';
+  this.xml = renderer.render(this).data.toString() + '\n';
 }
 
 /** Convert Carto CSS to Mapnik XML. */

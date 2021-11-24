@@ -9,7 +9,7 @@ WORKDIR /app
 
 RUN npm config set registry https://repo.socrata.com/artifactory/api/npm/npm-virtual \
 &&  curl -s -u"${ARTIFACTORY_USER}":"${ARTIFACTORY_PASSWORD}" "https://repo.socrata.com/artifactory/api/npm/auth" >> ~/.npmrc \
-&&  RUN npm install --production \
+&&  npm install --production \
 &&  rm -f ~/.npmrc
 
 ADD index.js /app/

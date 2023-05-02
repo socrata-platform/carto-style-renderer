@@ -1,4 +1,4 @@
-FROM socrata/runit-nodejs-bionic:14x
+FROM socrata/runit-nodejs-focal:18x
 
 ARG ARTIFACTORY_USER
 ARG ARTIFACTORY_PASSWORD

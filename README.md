@@ -26,3 +26,6 @@ curl "localhost:4097/style?style=$(cat examples/main.mss.enc)"
 
 ## Building ##
 See [docker/README.md](./docker/README.md).
+
+## Deploying ##
+Remember to run `node bin/release.js` to update the version after merging.

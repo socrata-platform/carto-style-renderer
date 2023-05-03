@@ -2,16 +2,17 @@
 
 ## Building ##
 To build the image, run:
+
 ```
-cp ../index.js ../package.json .
-docker build -t carto-style-renderer .
+cp ../index.js ../package.json ../test.js .
+DOCKER_BUILDKIT=1 docker build \
+  --build-arg ARTIFACTORY_USER="${ARTIFACTORY_USER}" \
+  --build-arg ARTIFACTORY_PASSWORD="${ARTIFACTORY_PASSWORD}" \
+  --tag carto-style-renderer \
+  .
 ```
- 
-Or, if you want to replace old versions:
-```
-cp ../index.js ../package.json
-docker build --rm -t carto-style-renderer .
-```
+
+Add `--target="test"` to run the test.
 
 ## Running ##
 ```

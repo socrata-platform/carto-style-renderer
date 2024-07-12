@@ -92,7 +92,6 @@ pipeline {
       }
     }
   }
-  /*
   post {
     failure {
       script {
@@ -105,5 +104,4 @@ pipeline {
       }
     }
   }
-  */
 }

@@ -1,6 +1,6 @@
 {
   "name": "carto-style-renderer",
-  "version": "0.1.10-SNAPSHOT",
+  "version": "0.1.10",
   "private": true,
   "dependencies": {
     "body-parser": "^1.13.3",

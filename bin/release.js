@@ -86,7 +86,7 @@ mocha.run(function (failures) {
       childProcess.execSync('git commit -m "Setting version to ' +
                             releaseVersion +
                             '"');
-      childProcess.execSync('git tag v' + releaseVersion);
+      childProcess.execSync('git tag -a v' + releaseVersion + ' -m "Release Tag"');
 
       packageInfo.version = nextVersion;
       jsonfile.writeFileSync(packagePath, packageInfo);

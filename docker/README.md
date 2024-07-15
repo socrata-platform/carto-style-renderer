@@ -4,15 +4,14 @@
 To build the image, run:
 
 ```
-cp ../index.js ../package.json ../test.js .
-DOCKER_BUILDKIT=1 docker build \
-  --build-arg ARTIFACTORY_USER="${ARTIFACTORY_USER}" \
-  --build-arg ARTIFACTORY_PASSWORD="${ARTIFACTORY_PASSWORD}" \
+  DOCKER_BUILDKIT=1 docker build \
+  --secret id=npmrc,src=$HOME/.npmrc \
   --tag carto-style-renderer \
   .
 ```
 
-Add `--target="test"` to run the test.
+If your .npmrc file is not located in the $HOME directory, then adjust that path.
+Add `--target=test` to only run the test.
 
 ## Running ##
 ```

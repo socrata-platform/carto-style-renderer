@@ -1,16 +1,16 @@
 # syntax=docker/dockerfile:1
 
-FROM socrata/runit-nodejs-focal:18x as base
+FROM socrata/runit-nodejs-focal:18x AS base
 
 WORKDIR /app
 COPY index.js package.json /app/
 
-FROM base as test
+FROM base AS test
 
 RUN mkdir -p /app/test
 COPY /test/test.js /app/test/
 
-RUN --mount=type=secret,required=true,id=npmrc,target="${HOME}/.npmrc" \
+RUN --mount=type=secret,required=true,id=npmrc,target="/.npmrc" \
     npm install \
 &&  npx mocha
 
@@ -20,7 +20,7 @@ FROM base
 
 COPY --from=test app/test.txt app/
 
-RUN --mount=type=secret,required=true,id=npmrc,target="${HOME}/.npmrc" \
+RUN --mount=type=secret,required=true,id=npmrc,target="/.npmrc" \
     NODE_ENV=production npm install
 
 COPY docker/runit /etc/service/carto-style-renderer

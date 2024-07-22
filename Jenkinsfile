@@ -2,7 +2,7 @@
 
 String service = 'carto-style-renderer'
 boolean isPr = env.CHANGE_ID != null
-boolean lastStage
+String lastStage
 
 def dockerize = new com.socrata.Dockerize(steps, service, BUILD_NUMBER)
 
@@ -22,7 +22,7 @@ pipeline {
     label params.AGENT
   }
   environment {
-    WEBHOOK_ID = 'WEBHOOK_IQ'
+    WEBHOOK_ID = 'WORKFLOW_IQ'
   }
   stages {
     stage('Checkout Release Tag') {
@@ -95,10 +95,11 @@ pipeline {
   post {
     failure {
       script {
-        if (!isPr) {
-          teamsMessage(
+        boolean buildingMain = env.JOB_NAME == "${service}/main"
+        if (buildingMain || params.RELEASE_BUILD) {
+          teamsWorkflowMessage(
             message: "[${currentBuild.fullDisplayName}](${env.BUILD_URL}) has failed in stage ${lastStage}",
-            webhookCredentialID: WEBHOOK_ID
+            workflowCredentialID: WEBHOOK_ID
           )
         }
       }

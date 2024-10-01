@@ -54,4 +54,8 @@ docker run -p 4097:4097 -d carto-style-renderer
 
 ## Releases
 
-Run `node bin/release.js` to update the version after merging an update. Press 'enter' to accept the default release and then snapshot version at the prompts.
+To tag a release to be built and deployed to RC:
+
+1. Create a branch from main and run `node bin/release.js`.
+1. Follow the prompts to bump the version, which will create two commits.
+1. Create a PR and get it merged to main.

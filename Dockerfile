@@ -14,11 +14,7 @@ RUN --mount=type=secret,required=true,id=npmrc,target="/root/.npmrc" \
     npm install \
 &&  npx mocha
 
-RUN echo "success" > /app/test.txt
-
-FROM base
-
-COPY --from=test app/test.txt app/
+FROM base AS prod
 
 RUN --mount=type=secret,required=true,id=npmrc,target="/root/.npmrc" \
     NODE_ENV=production npm install

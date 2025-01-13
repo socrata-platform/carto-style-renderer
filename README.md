@@ -54,6 +54,4 @@ docker run -p 4097:4097 -d carto-style-renderer
 
 ## Releases
 
-To tag a release to be built and deployed to RC:
-
-1. On main, run `node bin/release.js`. This will create two commits to bump the version and create a git tag for the release version and then push them to the remote repo.
+Releases are managed by the shared release process.

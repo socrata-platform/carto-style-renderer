@@ -16,9 +16,8 @@ node index.js
 
 ## Testing
 
-This depends on mocha: `npm install -g mocha`
-
 Run the tests:
+
 ```
 npx mocha
 ```

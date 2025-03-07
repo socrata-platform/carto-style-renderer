@@ -14,7 +14,9 @@ npm install
 node index.js
 ```
 
-## Testing
+Alternatively, there is a start script in `/bin`
+
+## Automated Testing
 
 Run the tests:
 
@@ -22,13 +24,33 @@ Run the tests:
 npx mocha
 ```
 
-## Example Request
+## Manually Testing
+
+If you are looking to manually test this repo, you can do this by starting the carto-style-renderer locally via `node index.js` and in another terminal run the example query below:
 
 This is appending the contents of examples/main.mss.enc as the query parameter. The contents of the query parameter is always a URI-encoded stylesheet.
 
 ```
 cd carto-style-renderer
 curl "localhost:4097/style?style=$(cat examples/main.mss.enc)"
+```
+
+If it is successful, you should get something like this back:
+
+```
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map[]>
+<Map>
+  <Style filter-mode="first" name="main">
+    <Rule>
+      <MarkersSymbolizer fill="#000066" stroke="#000099" stroke-width="1" width="3" />
+      <PolygonSymbolizer fill="#990000" />
+    </Rule>
+  </Style>
+  <Layer name="main">
+    <StyleName><![CDATA[main]]></StyleName>
+  </Layer>
+</Map>
 ```
 
 ## Building

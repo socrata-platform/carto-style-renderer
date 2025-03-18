@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM socrata/runit-nodejs-focal:18x AS base
+FROM socrata/runit-nodejs-focal:20x AS base
 
 WORKDIR /app
 COPY index.js package.json /app/

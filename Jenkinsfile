@@ -1,12 +1,22 @@
-@Library('socrata-pipeline-library@0.1.0') _
+@Library('socrata-pipeline-library@3.0.0') _
 
 Map pipelineParams = [
-  defaultBuildWorker: 'build-worker',
-  deploymentEcosystem: 'marathon-mesos',
-  dockerSecrets: ['id=npmrc,src="$HOME/.npmrc"'],
-  language: 'javascript',
-  projectName: 'carto-style-renderer',
-  teamsChannelWebhookId: 'WORKFLOW_IQ',
-  testFilePath: 'bin/test.sh'
+    defaultBuildWorker: 'build-worker',
+    dockerSecrets: [
+        'id=npmrc,src="$HOME/.npmrc"'
+    ],
+    jobName: 'carto-style-renderer',
+    language: 'javascript',
+    paths: [
+        testExecutable: 'bin/test.sh'
+    ],
+    projects: [
+        [
+            name: 'carto-style-renderer',
+            deploymentEcosystem: 'marathon-mesos',
+            type: 'service',
+        ]
+    ],
+    teamsChannelWebhookId: 'WORKFLOW_IQ',
 ]
-commonServicePipeline(pipelineParams)
+commonPipeline(pipelineParams)

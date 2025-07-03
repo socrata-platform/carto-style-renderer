@@ -1,9 +1,8 @@
-@Library('socrata-pipeline-library@3.0.0') _
+@Library('socrata-pipeline-library@9.0.0') _
 
-Map pipelineParams = [
-    defaultBuildWorker: 'build-worker',
-    dockerSecrets: [
-        'id=npmrc,src="$HOME/.npmrc"'
+commonPipeline(
+    docker: [
+        secrets: ['npmrc': 'src="$HOME/.npmrc"'],
     ],
     jobName: 'carto-style-renderer',
     language: 'javascript',
@@ -14,9 +13,11 @@ Map pipelineParams = [
         [
             name: 'carto-style-renderer',
             deploymentEcosystem: 'marathon-mesos',
+            paths: [
+                dockerBuildContext: '.',
+            ],
             type: 'service',
         ]
     ],
-    teamsChannelWebhookId: 'WORKFLOW_IQ',
-]
-commonPipeline(pipelineParams)
+    teamsChannelWebhookId: 'WORKFLOW_EGRESS_AUTOMATION',
+)

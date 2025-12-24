@@ -1,4 +1,6 @@
-# Carto Style Renderer
+# [ARCHIVED] Carto Style Renderer
+
+*NOTE* As of December 2025, this service is deprecated.
 
 This service renders Carto CSS to Mapnik XML.
 
